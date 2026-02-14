@@ -1,0 +1,18 @@
+[project]
+name = "filmspin"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi==0.115.2",
+    "uvicorn[standard]==0.30.6",
+    "httpx[http2]==0.27.0",
+    "pydantic-settings==2.6.1",
+    "python-dotenv==1.0.1",
+    "redis==6.4.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==8.3.3",
+]

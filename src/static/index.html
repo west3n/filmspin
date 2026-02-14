@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>FilmSpin — What to watch?</title>
+  <meta name="description" content="Don’t know what to watch? FilmSpin knows.">
+
+  <link rel="canonical" href="https://filmspin.cloud/" />
+  <link rel="icon" href="img/favicon.ico">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://filmspin.cloud/">
+  <meta property="og:title" content="FilmSpin — Random movie picker">
+  <meta property="og:description" content="Get a random movie suggestion with year and genre filters. IMDb rating when available.">
+  <meta property="og:image" content="https://filmspin.cloud/og-image.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FilmSpin — Random movie picker">
+  <meta name="twitter:description" content="Random movie suggestions with filters.">
+  <meta name="twitter:image" content="https://filmspin.cloud/og-image.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "FilmSpin",
+    "url": "https://filmspin.cloud/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://filmspin.cloud/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=19">
+</head>
+<body class="min-h-screen bg-zinc-900 text-zinc-100">
+  <div class="max-w-5xl mx-auto p-6">
+    <header class="flex flex-col items-center justify-center mb-6 text-center gap-2">
+      <div class="w-full flex items-center justify-between">
+        <div></div>
+        <div>
+          <label for="langSwitch" class="sr-only">Language</label>
+          <select id="langSwitch" class="px-2 py-1 rounded-md bg-zinc-800 border border-zinc-700 text-sm">
+            <option value="en">EN</option>
+            <option value="ru">RU</option>
+          </select>
+        </div>
+      </div>
+      <h1 class="site-title text-6xl sm:text-8xl font-extrabold mb-1">FilmSpin</h1>
+      <p id="slogan" class="text-xs sm:text-xs opacity-80">Don't know what to watch? FilmSpin knows.</p>
+    </header>
+    <section id="filters" class="bg-zinc-900/60 rounded-2xl p-5 border-2 border-zinc-600">
+        <div class="flex items-center justify-between">
+          <h2 id="filtersTitle" class="text-lg font-semibold">Filters</h2>
+          <button id="filtersToggle"
+                  class="text-sm px-3 py-1.5 rounded-lg border border-zinc-700 hover:bg-zinc-800/70 transition"
+                  aria-expanded="false" aria-controls="filtersBody">
+            Show
+          </button>
+        </div>
+      <div id="filtersBody" class="collapsible">
+        <div>
+          <label id="yearRangeLabel" class="year-label">Year range</label>
+          <div class="yr-wrap">
+            <div class="yr-track" id="yrTrack">
+              <div class="yr-fill" id="yrFill"></div>
+            </div>
+            <input id="yrMin" class="yr-input" type="range" min="1900" max="2100" step="1" value="1900">
+            <input id="yrMax" class="yr-input" type="range" min="1900" max="2100" step="1" value="2100">
+            <span id="yrMinBadge" class="yr-badge">1900</span>
+            <span id="yrMaxBadge" class="yr-badge">2100</span>
+          </div>
+        </div>
+        <div class="mt-5">
+            <label id="countriesLabel" class="block text-sm mb-2">Countries</label>
+            <div id="countryChips" class="flex flex-wrap gap-2"></div>
+            <p class="text-xs mt-1 opacity-70">Click to select multiple</p>
+        </div>
+        <div class="mt-5">
+          <label id="genresLabel" class="block text-sm mb-2">Genres</label>
+          <div id="genreChips" class="flex flex-wrap gap-2"></div>
+          <p class="text-xs mt-1 opacity-70">Click to select multiple</p>
+        </div>
+
+        <div class="mt-6 flex items-center gap-3 w-full">
+          <label id="minRatingLabel" class="text-sm whitespace-nowrap">Min. rating</label>
+          <input id="ratingMin" type="range" min="1" max="9" value="1" step="0.1" class="flex-1">
+          <span id="ratingVal" class="text-sm opacity-80">0</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-6 flex justify-center">
+    <button id="spin" aria-label="Random movie"
+      class="px-6 py-3 rounded-2xl bg-black text-white font-semibold transition relative overflow-hidden active:scale-95 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+        <span class="dice">
+            <img src="/img/endurance.png" alt="Endurance" />
+        </span>
+        <span class="label">RANDOM MOVIE</span>
+        <span class="shine" aria-hidden="true"></span>
+    </button>
+
+    </section>
+
+    <section id="result" class="mt-6 hidden">
+      <div class="result-card bg-zinc-900/60 rounded-2xl p-5 border border-zinc-800 flex flex-col sm:flex-row gap-5 will-change-transform will-change-opacity">
+        <img id="poster" class="w-full sm:w-1/4 h-auto object-cover rounded-xl border border-zinc-800" />
+        <div class="flex-1 min-w-0">
+          <h2 id="title" class="text-2xl font-semibold"></h2>
+          <p id="meta" class="opacity-70 text-sm mt-1 truncate"></p>
+          <p id="overview" class="mt-3 text-xl opacity-90 sm:line-clamp-none"></p>
+          <div id="ratings" class="mt-3 text-base sm:text-lg leading-relaxed">
+          <div class="flex flex-wrap items-center gap-x-1 gap-y-1">
+            <span id="kpRating"   class="hidden inline-flex items-center gap-1"></span>
+            <span id="imdbRating" class="hidden inline-flex items-center gap-1"></span>
+            <span id="tmdbRating" class="hidden inline-flex items-center gap-1 opacity-90"></span>
+          </div>
+        </div>
+        </div>
+      </div>
+    </section>
+    <footer id="footerData" class="mt-10 text-center text-xs opacity-70">
+    Data from TMDb (+ IMDb rating via OMDb when available)
+    </footer>
+    <footer class="mt-1 text-center text-xs opacity-60 space-x-2">
+      <span>© 2025</span>
+      <span id="footerBy">by <a href="https://t.me/miroshnikov" class="underline hover:no-underline">Sergey Miroshnikov</a></span>
+      <span class="hidden sm:inline">·</span>
+      <a id="footerTerms" href="/terms" class="underline hover:no-underline">Terms of Service</a>
+    </footer>
+  </div>
+  <script type="module" defer src="/js/app.js?v=20"></script>
+</body>
+</html>

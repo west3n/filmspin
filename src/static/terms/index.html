@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title id="docTitle">FilmSpin — Terms of Service</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Montserrat', Helvetica, Arial, sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen bg-zinc-900 text-zinc-100">
+  <div class="max-w-5xl mx-auto p-6">
+    <header class="mb-6 flex items-center justify-between gap-4">
+      <a id="backLink" href="/" class="text-sm opacity-70 hover:opacity-100 underline" data-i18n="back">← Back to FilmSpin</a>
+      <div>
+        <label for="langSwitch" class="sr-only">Language</label>
+          <select id="langSwitch" class="px-2 py-1 rounded-md bg-zinc-800 border border-zinc-700 text-sm">
+            <option value="en">EN</option>
+            <option value="ru">RU</option>
+          </select>
+      </div>
+    </header>
+
+    <h1 class="text-4xl sm:text-5xl font-extrabold mb-4" data-i18n="title">Terms of Service</h1>
+    <p class="opacity-80 mb-6" data-i18n="updated">Last updated: 31 Aug 2025</p>
+
+    <section class="space-y-5 leading-relaxed text-zinc-200">
+      <p data-i18n="intro">
+        <strong>FilmSpin</strong> is a personal project that helps you discover a random movie based on simple filters (years, genres, rating). By using FilmSpin, you agree to these Terms.
+      </p>
+
+      <h2 class="text-xl font-bold mt-6" data-i18n="h1">1. Service & Availability</h2>
+      <p data-i18n="p1">
+        FilmSpin is provided on an “as is” and “as available” basis without warranties of any kind. Availability, features and performance may change at any time without notice.
+      </p>
+
+      <h2 class="text-xl font-bold mt-6" data-i18n="h2">2. Data Sources & Attribution</h2>
+      <p data-i18n="p2">
+        Movie data is retrieved from third-party APIs (currently TMDb and OMDb). FilmSpin is not affiliated with IMDb, TMDb or OMDb. All titles, images and metadata are the property of their respective owners. Where required, links to the source are provided.
+      </p>
+
+      <h2 class="text-xl font-bold mt-6" data-i18n="h3">3. Accuracy</h2>
+      <p data-i18n="p3">
+        Results and ratings may be incomplete, outdated or inaccurate. Always verify details on the source websites (TMDb/IMDb) before relying on them.
+      </p>
+
+      <h2 class="text-xl font-bold mt-6" data-i18n="h4">4. Personal Use</h2>
+      <p data-i18n="p4">
+        FilmSpin is intended for personal, non-commercial use. You agree not to misuse the service, not to attempt to scrape, overload, or reverse engineer it.
+      </p>
+
+      <h2 class="text-xl font-bold mt-6" data-i18n="h5">5. Privacy</h2>
+      <p data-i18n="p5">
+        FilmSpin doesn’t require accounts or store personal data. Standard server logs and anonymous analytics (if enabled in the future) may be used to improve the service. External APIs you call through FilmSpin are subject to their own privacy policies.
+      </p>
+
+      <h2 class="text-xl font-bold mt-6" data-i18n="h6">6. Third-Party Links</h2>
+      <p data-i18n="p6">
+        Links to external sites (e.g., IMDb, TMDb) are provided for convenience. FilmSpin isn’t responsible for their content or policies.
+      </p>
+
+      <h2 class="text-xl font-bold mt-6" data-i18n="h7">7. Limitation of Liability</h2>
+      <p data-i18n="p7">
+        To the maximum extent permitted by law, FilmSpin and its creator shall not be liable for any damages or losses arising from your use of the service.
+      </p>
+
+      <h2 class="text-xl font-bold mt-6" data-i18n="h8">8. Changes to These Terms</h2>
+      <p data-i18n="p8">
+        Terms may be updated periodically. Continued use of FilmSpin after changes constitutes acceptance of the updated Terms.
+      </p>
+
+      <h2 class="text-xl font-bold mt-6" data-i18n="h9">9. Contact</h2>
+      <p data-i18n="p9">
+        Questions or suggestions? Contact:
+        <a class="underline hover:no-underline" href="https://t.me/miroshnikov" target="_blank" rel="noopener">t.me/miroshnikov</a>
+      </p>
+    </section>
+
+    <footer class="mt-10 text-center text-xs opacity-60">
+      © 2025 · FilmSpin
+    </footer>
+  </div>
+
+  <script>
+    const I18N = {
+      en: {
+        back: '← Back to FilmSpin',
+        title: 'Terms of Service',
+        updated: 'Last updated: 31 Aug 2025',
+        intro: '<strong>FilmSpin</strong> is a personal project that helps you discover a random movie based on simple filters (years, genres, rating). By using FilmSpin, you agree to these Terms.',
+        h1: '1. Service & Availability',
+        p1: 'FilmSpin is provided on an “as is” and “as available” basis without warranties of any kind. Availability, features and performance may change at any time without notice.',
+        h2: '2. Data Sources & Attribution',
+        p2: 'Movie data is retrieved from third-party APIs (TMDb, OMDb and poiskkino.dev). FilmSpin is not affiliated with those services. All titles, images and metadata are the property of their respective owners. Where required, links to the source are provided.',
+        h3: '3. Accuracy',
+        p3: 'Results and ratings may be incomplete, outdated or inaccurate. Always verify details on the source websites (TMDb/IMDb/Kinopoisk) before relying on them.',
+        h4: '4. Personal Use',
+        p4: 'FilmSpin is intended for personal, non-commercial use. You agree not to misuse the service, not to attempt to scrape, overload, or reverse engineer it.',
+        h5: '5. Privacy',
+        p5: 'FilmSpin doesn’t require accounts or store personal data. Standard server logs and anonymous analytics (if enabled in the future) may be used to improve the service. External APIs you call through FilmSpin are subject to their own privacy policies.',
+        h6: '6. Third-Party Links',
+        p6: 'Links to external sites (IMDb, TMDb, Kinopoisk) are provided for convenience. FilmSpin isn’t responsible for their content or policies.',
+        h7: '7. Limitation of Liability',
+        p7: 'To the maximum extent permitted by law, FilmSpin and its creator shall not be liable for any damages or losses arising from your use of the service.',
+        h8: '8. Changes to These Terms',
+        p8: 'Terms may be updated periodically. Continued use of FilmSpin after changes constitutes acceptance of the updated Terms.',
+        h9: '9. Contact',
+        p9: 'Questions or suggestions? Contact: <a class="underline hover:no-underline" href="https://t.me/miroshnikov" target="_blank" rel="noopener">t.me/miroshnikov</a>',
+        docTitle: 'FilmSpin — Terms of Service'
+      },
+      ru: {
+        back: '← Назад к FilmSpin',
+        title: 'Условия использования',
+        updated: 'Последнее обновление: 31 авг 2025',
+        intro: '<strong>FilmSpin</strong> — персональный проект, который помогает подбирать случайный фильм по простым фильтрам (годы, жанры, рейтинг). Используя FilmSpin, вы соглашаетесь с этими Условиями.',
+        h1: '1. Сервис и доступность',
+        p1: 'Сервис предоставляется «как есть» и «по мере доступности» без каких-либо гарантий. Доступность, функциональность и производительность могут меняться в любое время без уведомления.',
+        h2: '2. Источники данных и атрибуции',
+        p2: 'Данные о фильмах получаются из сторонних API (TMDb, OMDb и poiskkino.dev). FilmSpin не аффилирован с этими сервисами. Все названия, изображения и метаданные принадлежат их правообладателям. Где требуется — приводятся ссылки на источник.',
+        h3: '3. Точность данных',
+        p3: 'Результаты и рейтинги могут быть неполными, устаревшими или неточными. Перед использованием проверяйте детали на сайтах-источниках (TMDb/IMDb/Kinopoisk).',
+        h4: '4. Личное использование',
+        p4: 'FilmSpin предназначен для личного некоммерческого использования. Вы соглашаетесь не злоупотреблять сервисом, не пытаться массово извлекать данные (scrape), перегружать его или проводить реверс-инжиниринг.',
+        h5: '5. Конфиденциальность',
+        p5: 'FilmSpin не требует аккаунтов и не хранит персональные данные. Стандартные серверные логи и анонимная аналитика (при возможном включении в будущем) могут использоваться для улучшения сервиса. Внешние API, к которым вы обращаетесь через FilmSpin, регулируются их собственными политиками конфиденциальности.',
+        h6: '6. Сторонние ссылки',
+        p6: 'Ссылки на внешние сайты (IMDb, TMDb, Kinopoisk) предоставлены для удобства. FilmSpin не несёт ответственности за их содержимое и политики.',
+        h7: '7. Ограничение ответственности',
+        p7: 'В максимально допустимой законом степени FilmSpin и его автор не несут ответственности за какие-либо убытки или ущерб, возникшие вследствие использования сервиса.',
+        h8: '8. Изменения условий',
+        p8: 'Условия могут периодически обновляться. Продолжая пользоваться FilmSpin после изменений, вы соглашаетесь с обновлённой редакцией.',
+        h9: '9. Контакты',
+        p9: 'Вопросы или предложения? Связаться: <a class="underline hover:no-underline" href="https://t.me/miroshnikov" target="_blank" rel="noopener">t.me/miroshnikov</a>',
+        docTitle: 'FilmSpin — Условия использования'
+      }
+    };
+
+    const langSelect = document.getElementById('langSwitch');
+
+    function getLang(){
+      return localStorage.getItem('fs_lang') || (navigator.language.startsWith('ru') ? 'ru' : 'en');
+    }
+    function setLang(v){ localStorage.setItem('fs_lang', v); }
+
+    function t(key){
+      const L = getLang();
+      return (I18N[L] && I18N[L][key]) || (I18N.en[key] || key);
+    }
+
+    function applyTranslations(){
+      document.documentElement.setAttribute('lang', getLang());
+      document.getElementById('docTitle').textContent = t('docTitle');
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.innerHTML = t(key);
+      });
+
+      langSelect.value = getLang();
+    }
+
+    // init
+    (function init(){
+      langSelect.value = getLang();
+      applyTranslations();
+      langSelect.addEventListener('change', () => {
+        setLang(langSelect.value);
+        applyTranslations();
+      });
+    })();
+  </script>
+</body>
+</html>
