@@ -42,6 +42,7 @@ Push to `main`:
 ## Useful make commands
 
 - `make bootstrap-prod`
+- `make preflight-prod`
 - `make deploy-prod`
 - `make ps-prod`
 - `make logs-prod SERVICE=app`

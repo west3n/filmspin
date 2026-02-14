@@ -5,11 +5,12 @@ COMPOSE_FILE ?= docker-compose.prod.yml
 DC := docker compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE)
 SERVICE ?= app
 
-.PHONY: help bootstrap-prod deploy-prod up-prod pull-prod restart-prod down-prod ps-prod logs-prod config-prod
+.PHONY: help bootstrap-prod preflight-prod deploy-prod up-prod pull-prod restart-prod down-prod ps-prod logs-prod config-prod
 
 help:
 	@echo "Targets:"
 	@echo "  make bootstrap-prod - install docker/firewall prereqs on VPS"
+	@echo "  make preflight-prod - validate prod env and compose config"
 	@echo "  make deploy-prod    - pull + up -d + ps"
 	@echo "  make up-prod        - start/update stack"
 	@echo "  make pull-prod      - pull images"
@@ -24,6 +25,9 @@ help:
 
 bootstrap-prod:
 	@./scripts/bootstrap_prod.sh
+
+preflight-prod:
+	@./scripts/preflight_prod.sh
 
 deploy-prod:
 	@./scripts/deploy.sh

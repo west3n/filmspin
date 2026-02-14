@@ -23,6 +23,8 @@ Notes:
    - `ACME_EMAIL`
    - API keys (`TMDB_API_KEY`, `OMDB_API_KEY`)
    - `APP_IMAGE` (defaults to GHCR image path)
+3. Validate config before deploy:
+   - `make preflight-prod`
 
 ## 3. First deploy on server
 
@@ -31,6 +33,7 @@ Run:
 ```bash
 make bootstrap-prod
 cp .env.prod.example .env.prod
+make preflight-prod
 make deploy-prod
 ```
 
@@ -67,6 +70,7 @@ Configure these GitHub repository secrets:
 make ps-prod
 make logs-prod SERVICE=app
 make logs-prod SERVICE=caddy
+make preflight-prod
 make restart-prod
 make down-prod
 ```
