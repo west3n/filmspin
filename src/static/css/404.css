@@ -162,6 +162,7 @@ body {
 }
 
 .planet-wrap {
+  --ship-radius: 122px;
   width: min(360px, 100%);
   aspect-ratio: 1;
   margin: 0 auto;
@@ -276,10 +277,10 @@ body {
 
 @keyframes ship-orbit {
   from {
-    transform: rotate(0deg) translateX(122px) rotate(8deg);
+    transform: rotate(0deg) translateX(var(--ship-radius)) rotate(8deg);
   }
   to {
-    transform: rotate(360deg) translateX(122px) rotate(8deg);
+    transform: rotate(360deg) translateX(var(--ship-radius)) rotate(8deg);
   }
 }
 
@@ -306,6 +307,146 @@ body {
   .pick-mark {
     width: 48px;
     height: 48px;
+  }
+}
+
+@media (max-width: 760px) {
+  .lost-shell {
+    padding: 16px 12px 24px;
+  }
+
+  .lost-topbar {
+    margin-bottom: 12px;
+  }
+
+  .brand-link {
+    font-size: 1.75rem;
+    letter-spacing: 0.04em;
+  }
+
+  .lang-switch {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+
+  .lost-stage {
+    gap: 12px;
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .planet-wrap {
+    --ship-radius: 88px;
+    width: min(250px, 76vw);
+  }
+
+  .ship {
+    width: 42px;
+    height: 42px;
+  }
+
+  .error-code {
+    font-size: clamp(2.45rem, 14.5vw, 4rem);
+  }
+
+  .lost-title {
+    margin-top: 8px;
+    font-size: clamp(1.18rem, 6.5vw, 1.42rem);
+  }
+
+  .lost-subtitle {
+    margin-top: 8px;
+    line-height: 1.48;
+    font-size: 0.95rem;
+  }
+
+  .lost-actions {
+    margin-top: 12px;
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 9px 12px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+  }
+
+  .lost-reco {
+    margin-top: 10px;
+  }
+
+  .pick-kicker {
+    margin-bottom: 8px;
+    letter-spacing: 0.13em;
+  }
+
+  .pick-card {
+    grid-template-columns: 36px 1fr;
+    gap: 10px;
+    padding: 11px 11px 12px;
+    border-radius: 14px;
+  }
+
+  .pick-mark {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .pick-title {
+    font-size: 0.84rem;
+  }
+
+  .pick-movie-name {
+    margin-top: 4px;
+    font-size: 1.05rem;
+  }
+
+  .pick-meta {
+    font-size: 0.75rem;
+  }
+
+  .pick-why {
+    margin-top: 6px;
+    font-size: 0.86rem;
+    line-height: 1.42;
+  }
+
+  .pick-link {
+    margin-top: 8px;
+    font-size: 0.86rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .lost-shell {
+    padding: 14px 10px 20px;
+  }
+
+  .lost-stage {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .planet-wrap {
+    --ship-radius: 74px;
+    width: min(210px, 74vw);
+  }
+
+  .ship {
+    width: 36px;
+    height: 36px;
+  }
+
+  .pick-card {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .pick-mark {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
   }
 }
 
