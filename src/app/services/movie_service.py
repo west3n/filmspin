@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
 from ..clients import OmdbClient, PoiskkinoClient, TmdbClient
-from ..core.config import TTL_MOVIE_DETAIL
+from ..core.config import TTL_MOVIE_DETAIL, TTL_OMDB_NEGATIVE
 from ..repositories import CacheRepository, MappingRepository
 from ..schemas import MovieCard
 
@@ -171,9 +171,18 @@ class MovieResolverService:
         key = f"omdb:{imdb_id}"
         hit, cached = await self.cache.get_json_hit(key)
         if hit:
-            return cached if isinstance(cached, dict) else None
+            if isinstance(cached, dict):
+                if cached.get("_missing"):
+                    return None
+                return cached
+            return None
         data = await self.omdb.rating(imdb_id)
-        await self.cache.set_json(key, data, TTL_MOVIE_DETAIL)
+        if isinstance(data, dict):
+            await self.cache.set_json(key, data, TTL_MOVIE_DETAIL)
+        else:
+            # Cache negative OMDb lookups for a short period to avoid
+            # repeatedly hitting OMDb while still allowing quick recovery.
+            await self.cache.set_json(key, {"_missing": True}, TTL_OMDB_NEGATIVE)
         return data
 
     @staticmethod

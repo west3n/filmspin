@@ -38,6 +38,7 @@ class Settings(BaseSettings):
 
     ttl_genres: int = 60 * 60 * 24 * 30
     ttl_movie_detail: int = 60 * 60 * 24
+    ttl_omdb_negative: int = 60 * 10
     ttl_recent: int = 60 * 60 * 12
     recent_limit: int = 100
 

@@ -24,6 +24,7 @@ HTTP_TRUST_ENV = _settings.http_trust_env
 
 TTL_GENRES = _settings.ttl_genres
 TTL_MOVIE_DETAIL = _settings.ttl_movie_detail
+TTL_OMDB_NEGATIVE = _settings.ttl_omdb_negative
 TTL_RECENT = _settings.ttl_recent
 RECENT_LIMIT = _settings.recent_limit
 

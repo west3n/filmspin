@@ -1,3 +1,4 @@
+import logging
 import random
 import re
 from typing import Optional
@@ -7,6 +8,8 @@ from ..core.config import RECENT_LIMIT, TTL_RECENT
 from ..repositories import CacheRepository, RecentRepository
 from ..schemas import ApiError, MovieCard
 from .movie_service import MovieResolverService
+
+logger = logging.getLogger("uvicorn.error")
 
 
 class RandomService:
@@ -35,12 +38,12 @@ class RandomService:
         country: Optional[str],
         lang: str,
     ) -> MovieCard | ApiError:
+        strategy = self._discover_strategy(vote_avg_min)
         params: dict[str, object] = {
             "include_adult": "false",
             "include_video": "false",
-            "sort_by": "popularity.desc",
-            "vote_count.gte": 50,
-            "vote_average.gte": vote_avg_min,
+            "sort_by": strategy["sort_by"],
+            "vote_count.gte": strategy["vote_count_gte"],
         }
         if genres:
             params["with_genres"] = genres
@@ -60,29 +63,64 @@ class RandomService:
         if total_pages == 0 or not first.get("results"):
             return ApiError(error="No results for the current filters.")
 
-        page = random.randint(1, max(1, total_pages))
-        if page == 1:
-            page_data = first
-        else:
-            page_data = await self.tmdb.get(
+        page_plan = self._build_page_plan(total_pages, strategy["probe_pages"])
+        candidate_pool: list[int] = []
+        seen_ids: set[int] = set()
+
+        for page in page_plan:
+            page_data = first if page == 1 else await self.tmdb.get(
                 "/discover/movie", {**params, "page": page, "language": lang}
             )
-        results = page_data.get("results", [])
-        if not results:
-            return ApiError(error="Empty page. Try loosening the filters.")
+            results = page_data.get("results", [])
+            if not isinstance(results, list):
+                continue
+            for item in results:
+                if not isinstance(item, dict):
+                    continue
+                mid = item.get("id")
+                if mid is None:
+                    continue
+                try:
+                    tmdb_id = int(mid)
+                except (TypeError, ValueError):
+                    continue
+                if tmdb_id in seen_ids:
+                    continue
+                seen_ids.add(tmdb_id)
+                candidate_pool.append(tmdb_id)
 
-        candidate_id, pool = await self.recent.choose_not_recent(
-            recent_key, (r["id"] for r in results if isinstance(r, dict) and "id" in r)
-        )
-        if candidate_id is None:
-            await self.recent.redis.delete(recent_key)
-            candidate_id = random.choice(pool)
+        if not candidate_pool:
+            return ApiError(error="No results for the current filters.")
 
-        movie = await self.movie_resolver.resolve(lang=lang, tmdb_id=candidate_id)
-        await self.recent.add(
-            recent_key, str(candidate_id), ttl=TTL_RECENT, limit=RECENT_LIMIT
+        candidate_ids = await self._order_by_recentness(
+            recent_key, candidate_pool, prefer_shuffle=strategy["shuffle_candidates"]
         )
-        return movie
+        candidate_ids = candidate_ids[: strategy["max_resolve_candidates"]]
+
+        checked = 0
+        with_imdb = 0
+        for tmdb_id in candidate_ids:
+            checked += 1
+            movie = await self.movie_resolver.resolve(lang=lang, tmdb_id=tmdb_id)
+            if movie.imdb_rating is not None:
+                with_imdb += 1
+            if not self._passes_imdb_filter(movie.imdb_rating, vote_avg_min):
+                continue
+            await self.recent.add(
+                recent_key, str(tmdb_id), ttl=TTL_RECENT, limit=RECENT_LIMIT
+            )
+            return movie
+
+        logger.info(
+            "[FilmSpin] imdb filter miss: min=%.1f checked=%s with_imdb=%s total_candidates=%s",
+            vote_avg_min,
+            checked,
+            with_imdb,
+            len(candidate_pool),
+        )
+        return ApiError(
+            error="No movies found for the selected IMDb rating filter. Try lowering the minimum rating."
+        )
 
     async def random_ru(
         self,
@@ -100,8 +138,6 @@ class RandomService:
             params["year"] = str(year_from)
         elif year_to:
             params["year"] = str(year_to)
-        if vote_avg_min and float(vote_avg_min) > 0:
-            params["rating.kp"] = f"{float(vote_avg_min)}-10"
         if genres:
             params["genres.name"] = genres.replace(",", "|").split("|")
         if country:
@@ -111,30 +147,45 @@ class RandomService:
         recent_key = f"recent:kp:{fkey}"
         recent_ids = await self.recent.members(recent_key)
 
-        attempts = 6
-        last_cand: dict[str, object] | None = None
-        kp_id: Optional[int] = None
+        attempts = self._ru_attempt_budget(vote_avg_min)
+        checked = 0
+        with_imdb = 0
+        seen_this_round: set[str] = set()
         while attempts > 0:
             cand = await self.poiskkino.get("/v1.4/movie/random", params=params)
-            last_cand = cand
             cid = cand.get("id")
             if cid is None:
                 attempts -= 1
                 continue
-            if str(cid) in recent_ids:
+            sid = str(cid)
+            if sid in recent_ids or sid in seen_this_round:
                 attempts -= 1
                 continue
+            seen_this_round.add(sid)
             kp_id = int(cid)
-            break
+            checked += 1
+            movie = await self.movie_resolver.resolve(lang="ru-RU", kp_id=kp_id)
+            if movie.imdb_rating is not None:
+                with_imdb += 1
+            if not self._passes_imdb_filter(movie.imdb_rating, vote_avg_min):
+                recent_ids.add(str(kp_id))
+                attempts -= 1
+                continue
+            await self.recent.add(
+                recent_key, str(kp_id), ttl=TTL_RECENT, limit=RECENT_LIMIT
+            )
+            return movie
 
-        if kp_id is None and isinstance(last_cand, dict):
-            cid = last_cand.get("id")
-            kp_id = int(cid) if cid is not None else None
-
-        movie = await self.movie_resolver.resolve(lang="ru-RU", kp_id=kp_id)
-        if kp_id:
-            await self.recent.add(recent_key, str(kp_id), ttl=TTL_RECENT, limit=RECENT_LIMIT)
-        return movie
+        logger.info(
+            "[FilmSpin] ru imdb filter miss: min=%.1f checked=%s with_imdb=%s attempt_budget=%s",
+            vote_avg_min,
+            checked,
+            with_imdb,
+            self._ru_attempt_budget(vote_avg_min),
+        )
+        return ApiError(
+            error="No movies found for the selected IMDb rating filter. Try lowering the minimum rating."
+        )
 
     @staticmethod
     def _normalize_iso_country_filter(raw: str) -> str:
@@ -143,3 +194,86 @@ class RandomService:
         # Preserve order while removing duplicates.
         unique = list(dict.fromkeys(iso))
         return ",".join(unique)
+
+    @staticmethod
+    def _passes_imdb_filter(imdb_rating: Optional[float], min_rating: float) -> bool:
+        if min_rating <= 0:
+            return True
+        if imdb_rating is None:
+            return False
+        try:
+            return float(imdb_rating) >= float(min_rating)
+        except (TypeError, ValueError):
+            return False
+
+    @staticmethod
+    def _discover_strategy(min_rating: float) -> dict[str, object]:
+        if min_rating >= 8.5:
+            return {
+                "sort_by": "vote_average.desc",
+                "vote_count_gte": 250,
+                "probe_pages": 18,
+                "max_resolve_candidates": 160,
+                "shuffle_candidates": False,
+            }
+        if min_rating >= 7.5:
+            return {
+                "sort_by": "vote_average.desc",
+                "vote_count_gte": 120,
+                "probe_pages": 12,
+                "max_resolve_candidates": 120,
+                "shuffle_candidates": False,
+            }
+        if min_rating >= 6.5:
+            return {
+                "sort_by": "popularity.desc",
+                "vote_count_gte": 80,
+                "probe_pages": 8,
+                "max_resolve_candidates": 90,
+                "shuffle_candidates": True,
+            }
+        return {
+            "sort_by": "popularity.desc",
+            "vote_count_gte": 50,
+            "probe_pages": 5,
+            "max_resolve_candidates": 70,
+            "shuffle_candidates": True,
+        }
+
+    @staticmethod
+    def _build_page_plan(total_pages: int, probe_pages: int) -> list[int]:
+        if total_pages <= 1:
+            return [1]
+        max_probe = max(1, min(probe_pages, total_pages))
+        if max_probe == 1:
+            return [1]
+        candidates = list(range(2, total_pages + 1))
+        extras = random.sample(candidates, k=max_probe - 1)
+        return [1, *extras]
+
+    async def _order_by_recentness(
+        self, recent_key: str, candidate_pool: list[int], *, prefer_shuffle: bool
+    ) -> list[int]:
+        if not candidate_pool:
+            return []
+        recent = await self.recent.members(recent_key)
+        fresh = [x for x in candidate_pool if str(x) not in recent]
+        stale = [x for x in candidate_pool if str(x) in recent]
+
+        if not fresh:
+            await self.recent.redis.delete(recent_key)
+            ordered = candidate_pool[:]
+        else:
+            ordered = [*fresh, *stale]
+
+        if prefer_shuffle:
+            random.shuffle(ordered)
+        return ordered
+
+    @staticmethod
+    def _ru_attempt_budget(min_rating: float) -> int:
+        if min_rating >= 8.5:
+            return 32
+        if min_rating >= 7.5:
+            return 22
+        return 12

@@ -16,7 +16,7 @@ async def random_movie(
     genres: Optional[str] = Query(
         None, description="TMDb genre ids, comma or | separated"
     ),
-    vote_avg_min: float = Query(0.0, ge=0.0, le=10.0),
+    vote_avg_min: float = Query(1.0, ge=0.0, le=10.0, description="IMDb rating 0..10"),
     country: Optional[str] = Query(None, description="ISO 3166-1 code (e.g. US, GB)"),
     lang: str = Query("en-US", description="TMDb language code, e.g. en-US or ru-RU"),
     service: RandomService = Depends(get_random_service),
@@ -38,7 +38,7 @@ async def random_movie_ru(
     genres: Optional[str] = Query(
         None, description="жанры (slug’и) через | или , например: komediya|uzhasy"
     ),
-    vote_avg_min: float = Query(0.0, ge=0.0, le=9.0, description="KP rating 0..10"),
+    vote_avg_min: float = Query(1.0, ge=0.0, le=10.0, description="IMDb rating 0..10"),
     country: Optional[str] = Query(
         None, description="ISO-коды (RU|US|CN) или рус./англ. названия через |"
     ),
