@@ -1,4 +1,4 @@
-import { I18N, langMap } from './modules/i18n.js?v=22';
+import { I18N, langMap } from './modules/i18n.js?v=26';
 import { getJson } from './modules/http.js?v=22';
 
 const FILTERS_STORAGE_KEY = 'fs_filters_v2';
@@ -149,13 +149,11 @@ function valueToColor(val) {
   const min = 1.0;
   const max = 9.0;
   const ratio = Math.min(1, Math.max(0, (val - min) / (max - min)));
-  // Warm gradient: dusty rose -> mocha sand.
-  const from = [168, 102, 114];
-  const to = [211, 160, 127];
-  const r = Math.round(from[0] + (to[0] - from[0]) * ratio);
-  const g = Math.round(from[1] + (to[1] - from[1]) * ratio);
-  const b = Math.round(from[2] + (to[2] - from[2]) * ratio);
-  return `rgb(${r},${g},${b})`;
+  // Dark red -> dark green, smoothly mapped by IMDb value.
+  const hue = 4 + (124 * ratio);
+  const saturation = 58;
+  const lightness = 34;
+  return `hsl(${hue} ${saturation}% ${lightness}%)`;
 }
 
 function updateRatingThumb() {
@@ -164,9 +162,10 @@ function updateRatingThumb() {
   const max = parseFloat(ratingMin.max);
   const ratio = (val - min) / (max - min);
   const color = valueToColor(val);
+  const trackColor = 'rgba(6, 14, 31, 0.68)';
 
   ratingMin.style.setProperty('--thumb-color', color);
-  ratingMin.style.background = `linear-gradient(to right, ${color} ${ratio * 100}%, rgba(93,73,82,0.52) ${ratio * 100}%)`;
+  ratingMin.style.background = `linear-gradient(to right, ${color} ${ratio * 100}%, ${trackColor} ${ratio * 100}%)`;
   ratingVal.textContent = val.toFixed(1);
 }
 
@@ -771,7 +770,7 @@ function applyStaticTranslations() {
   syncSpinLabel();
 
   const footerData = document.getElementById('footerData');
-  if (footerData) footerData.textContent = t('data_source');
+  if (footerData) footerData.innerHTML = t('data_source');
 
   const footerBy = document.getElementById('footerBy');
   if (footerBy) {
