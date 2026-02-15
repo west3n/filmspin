@@ -1,4 +1,4 @@
-import { I18N, langMap } from './modules/i18n.js?v=27';
+import { I18N, langMap } from './modules/i18n.js?v=29';
 import { getJson } from './modules/http.js?v=22';
 import {
   FILTERS_STORAGE_KEY,
@@ -10,7 +10,7 @@ import {
 import { clamp, toYear, valueToColor } from './modules/app/helpers.js?v=1';
 import { createStatusController } from './modules/app/status.js?v=1';
 import { createSpinButtonController } from './modules/app/spin_button.js?v=1';
-import { createFiltersController } from './modules/app/filters.js?v=1';
+import { createFiltersController } from './modules/app/filters.js?v=3';
 import { createCardController } from './modules/app/card.js?v=1';
 
 const ratingMin = document.getElementById('ratingMin');
@@ -26,16 +26,24 @@ const spinBtn = document.getElementById('spin');
 const retryBtn = document.getElementById('retrySpin');
 const statusEl = document.getElementById('requestStatus');
 const sloganEl = document.getElementById('slogan');
+const discoveryMeterEl = document.getElementById('discoveryMeter');
 const resultEl = document.getElementById('result');
 const resultSkeletonEl = document.getElementById('resultSkeleton');
 
 const langSelect = document.getElementById('langSwitch');
+const filtersHeader = document.getElementById('filtersHeader');
 const filtersToggle = document.getElementById('filtersToggle');
 const filtersBody = document.getElementById('filtersBody');
 const filtersResetBtn = document.getElementById('filtersReset');
 const presetPopularBtn = document.getElementById('presetPopular');
 const presetTopBtn = document.getElementById('presetTop');
 const presetRecentBtn = document.getElementById('presetRecent');
+const advancedToggle = document.getElementById('advancedToggle');
+const advancedBody = document.getElementById('advancedBody');
+const autoApplyToggle = document.getElementById('autoApplyToggle');
+const applyFiltersBtn = document.getElementById('applyFilters');
+const filtersPendingEl = document.getElementById('filtersPending');
+const relaxFiltersBtn = document.getElementById('relaxFilters');
 
 const publicConfig = { ru_enabled: true };
 
@@ -70,11 +78,19 @@ const filtersController = createFiltersController({
     yrTrack,
     yrMinBadge,
     yrMaxBadge,
+    filtersHeader,
     filtersBody,
     filtersToggle,
     presetPopularBtn,
     presetTopBtn,
     presetRecentBtn,
+    advancedBody,
+    advancedToggle,
+    autoApplyToggle,
+    applyFiltersBtn,
+    filtersPendingEl,
+    filtersPreviewEl: discoveryMeterEl,
+    relaxFiltersBtn,
   },
   constants: {
     YEAR_MIN,
@@ -143,16 +159,19 @@ async function spin() {
       const message = normalizeErrorMessage(data?.error || t('status_error_generic'));
       statusController.showStatus('error', message, { autoclear: true });
       retryBtn.classList.remove('hidden');
-      return;
+      return false;
     }
 
     cardController.setCurrentMovieFromData(data);
     cardController.renderCard(data);
     statusController.showStatus('success', t('status_ready'), { autoclear: true });
+    filtersController.markApplied();
+    return true;
   } catch (error) {
     console.error(error);
     statusController.showStatus('error', t('status_error_generic'), { autoclear: true });
     retryBtn.classList.remove('hidden');
+    return false;
   } finally {
     spinButtonController.setSpinLoading(false);
     showSkeleton(false);
@@ -184,15 +203,13 @@ function applyStaticTranslations() {
   document.getElementById('countriesHint').textContent = t('multi_select_hint');
   document.getElementById('genresHint').textContent = t('multi_select_hint');
 
-  const expanded = filtersToggle.getAttribute('aria-expanded') === 'true';
-  filtersToggle.textContent = expanded ? t('hide') : t('show');
-
   filtersResetBtn.textContent = t('filters_reset');
   presetPopularBtn.textContent = t('preset_popular');
   presetTopBtn.textContent = t('preset_top');
   presetRecentBtn.textContent = t('preset_recent');
   retryBtn.textContent = t('retry');
   spinButtonController.syncSpinLabel();
+  filtersController.applyTranslations();
 
   const footerData = document.getElementById('footerData');
   if (footerData) footerData.innerHTML = t('data_source');
@@ -224,10 +241,21 @@ function attachEventHandlers() {
 
   window.addEventListener('resize', filtersController.syncYearRange);
 
-  filtersToggle.addEventListener('click', () => {
+  const toggleFilters = () => {
     const expanded = filtersToggle.getAttribute('aria-expanded') === 'true';
     if (expanded) filtersController.closeFilters();
     else filtersController.openFilters();
+  };
+
+  filtersHeader.addEventListener('click', toggleFilters);
+  filtersHeader.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleFilters();
+  });
+
+  advancedToggle.addEventListener('click', () => {
+    filtersController.toggleAdvanced();
   });
 
   filtersResetBtn.addEventListener('click', async () => {
@@ -238,6 +266,9 @@ function attachEventHandlers() {
   presetPopularBtn.addEventListener('click', () => filtersController.applyPreset('popular'));
   presetTopBtn.addEventListener('click', () => filtersController.applyPreset('top'));
   presetRecentBtn.addEventListener('click', () => filtersController.applyPreset('recent'));
+  autoApplyToggle.addEventListener('click', () => filtersController.toggleAutoApply());
+  applyFiltersBtn.addEventListener('click', () => { void filtersController.applyNow(); });
+  relaxFiltersBtn.addEventListener('click', () => filtersController.relaxFilters());
 
   langSelect.addEventListener('change', async () => {
     if (langSelect.value === 'ru' && !isRuEnabled()) {
@@ -252,7 +283,7 @@ function attachEventHandlers() {
     filtersController.loadCountries();
     await filtersController.loadGenres();
     await cardController.reloadCurrentInNewLang();
-
+    filtersController.refreshAfterLanguageChange();
     filtersController.saveFilters();
   });
 
@@ -260,8 +291,14 @@ function attachEventHandlers() {
     if (filtersBody.classList.contains('is-open')) {
       filtersBody.style.maxHeight = `${filtersBody.scrollHeight}px`;
     }
+    if (advancedBody.classList.contains('is-open')) {
+      advancedBody.style.maxHeight = `${advancedBody.scrollHeight}px`;
+    }
   });
   ro.observe(filtersBody);
+  ro.observe(advancedBody);
+
+  filtersController.setApplyHandler(async () => spin());
 }
 
 async function initApp() {
@@ -276,13 +313,16 @@ async function initApp() {
 
   filtersController.syncYearRange();
   filtersController.updateRatingThumb();
-
   filtersController.loadCountries();
 
   if (filtersController.isSavedFiltersOpen()) filtersController.openFilters();
   else filtersController.closeFilters();
 
+  if (filtersController.isSavedAdvancedOpen()) filtersController.openAdvanced();
+  else filtersController.closeAdvanced();
+
   await filtersController.loadGenres();
+  filtersController.finalizeInitState();
   attachEventHandlers();
 }
 

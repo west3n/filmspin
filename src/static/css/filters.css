@@ -17,6 +17,86 @@
   flex-wrap: wrap;
 }
 
+.apply-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
+
+.pending-pill {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: #d4e6ff;
+  border: 1px solid rgba(110, 157, 255, 0.32);
+  background: rgba(18, 31, 61, 0.46);
+  border-radius: 9999px;
+  padding: 6px 10px;
+}
+
+.filters-preview {
+  min-height: 20px;
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: #9fb9e5;
+  transition: color 160ms ease;
+}
+
+.filters-preview.is-loading {
+  color: #bcd4f8;
+}
+
+.filters-preview.is-low {
+  color: #e8c5d5;
+}
+
+.filters-preview.is-unavailable {
+  color: #8fa6cc;
+}
+
+.advanced-tools {
+  margin-top: 14px;
+}
+
+.advanced-collapsible {
+  margin-top: 0;
+}
+
+.filters-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-icon-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-icon {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #c8dcff;
+  border-bottom: 2px solid #c8dcff;
+  transform: rotate(45deg) translateY(-1px);
+  transition: transform 180ms ease;
+}
+
+.toggle-icon-btn.is-expanded .toggle-icon {
+  transform: rotate(-135deg) translateY(-1px);
+}
+
+.tool-btn:disabled,
+.preset-btn:disabled,
+.toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .preset-btn {
   padding: 7px 12px;
   font-size: 12px;

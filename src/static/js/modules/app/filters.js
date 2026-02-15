@@ -8,11 +8,19 @@ export function createFiltersController({ elements, constants, deps }) {
     yrTrack,
     yrMinBadge,
     yrMaxBadge,
+    filtersHeader,
     filtersBody,
     filtersToggle,
     presetPopularBtn,
     presetTopBtn,
     presetRecentBtn,
+    advancedBody,
+    advancedToggle,
+    autoApplyToggle,
+    applyFiltersBtn,
+    filtersPendingEl,
+    filtersPreviewEl,
+    relaxFiltersBtn,
   } = elements;
 
   const {
@@ -36,8 +44,211 @@ export function createFiltersController({ elements, constants, deps }) {
 
   const selectedGenres = new Set();
   const selectedCountries = new Set();
+
   let genreSelectionSeed = new Set();
   let savedFiltersOpen = false;
+  let savedAdvancedOpen = false;
+  let autoApply = true;
+
+  let pending = false;
+  let applyInFlight = false;
+  let applyHandler = null;
+  let appliedCriteriaHash = '';
+  let autoApplyTimer = null;
+  let previewTimer = null;
+  let previewRequestSeq = 0;
+
+  let previewState = {
+    phase: 'idle',
+    estimatedTotal: null,
+    lowResults: false,
+    unavailable: false,
+  };
+
+  function _criteriaSnapshot() {
+    const { from, to } = getYearRange();
+    return {
+      year_from: from,
+      year_to: to,
+      vote_avg_min: Number.parseFloat(ratingMin.value) || 1,
+      genres: Array.from(selectedGenres),
+      countries: Array.from(selectedCountries),
+    };
+  }
+
+  function _criteriaHash() {
+    const criteria = _criteriaSnapshot();
+    return JSON.stringify({
+      ...criteria,
+      genres: [...criteria.genres].sort(),
+      countries: [...criteria.countries].sort(),
+    });
+  }
+
+  function _hasActiveCriteria() {
+    const criteria = _criteriaSnapshot();
+    return (
+      criteria.year_from !== YEAR_MIN
+      || criteria.year_to !== YEAR_MAX
+      || criteria.vote_avg_min > 1.01
+      || criteria.genres.length > 0
+      || criteria.countries.length > 0
+    );
+  }
+
+  function _clearPresetHighlights() {
+    [presetPopularBtn, presetTopBtn, presetRecentBtn].forEach((btn) => {
+      if (btn) btn.classList.remove('is-active');
+    });
+  }
+
+  function _updateFiltersBodyHeight() {
+    if (filtersBody?.classList.contains('is-open')) {
+      filtersBody.style.maxHeight = `${filtersBody.scrollHeight}px`;
+    }
+  }
+
+  function _updateAdvancedBodyHeight() {
+    if (advancedBody?.classList.contains('is-open')) {
+      advancedBody.style.maxHeight = `${advancedBody.scrollHeight}px`;
+    }
+    _updateFiltersBodyHeight();
+  }
+
+  function _updateToggleTexts() {
+    if (filtersToggle) {
+      const expanded = filtersToggle.getAttribute('aria-expanded') === 'true';
+      filtersToggle.classList.toggle('is-expanded', expanded);
+      filtersToggle.setAttribute('aria-label', expanded ? t('filters_collapse') : t('filters_expand'));
+      if (filtersHeader) filtersHeader.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+    if (advancedToggle) {
+      const expanded = advancedToggle.getAttribute('aria-expanded') === 'true';
+      advancedToggle.textContent = expanded ? t('filters_hide_advanced') : t('filters_show_advanced');
+    }
+  }
+
+  function _updateApplyControls() {
+    if (autoApplyToggle) {
+      autoApplyToggle.setAttribute('aria-pressed', autoApply ? 'true' : 'false');
+      autoApplyToggle.textContent = autoApply ? t('filters_auto_apply_on') : t('filters_auto_apply_off');
+    }
+
+    if (applyFiltersBtn) {
+      applyFiltersBtn.textContent = t('filters_apply');
+      applyFiltersBtn.disabled = !pending || applyInFlight;
+    }
+
+    if (filtersPendingEl) {
+      filtersPendingEl.textContent = t('filters_pending');
+      filtersPendingEl.classList.toggle('hidden', !pending);
+    }
+  }
+
+  function _formatCount(value) {
+    const locale = getLang() === 'ru' ? 'ru-RU' : 'en-US';
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '0';
+    if (n >= 1000) {
+      return new Intl.NumberFormat(locale, {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }).format(n);
+    }
+    return n.toLocaleString(locale);
+  }
+
+  function _renderPreview() {
+    if (!filtersPreviewEl) return;
+
+    filtersPreviewEl.classList.remove('is-loading', 'is-low', 'is-unavailable');
+
+    if (previewState.phase === 'loading') {
+      filtersPreviewEl.textContent = t('filters_preview_loading_short');
+      filtersPreviewEl.classList.add('is-loading');
+      if (relaxFiltersBtn) relaxFiltersBtn.classList.add('hidden');
+      return;
+    }
+
+    if (previewState.unavailable) {
+      filtersPreviewEl.textContent = '';
+      if (relaxFiltersBtn) relaxFiltersBtn.classList.add('hidden');
+      return;
+    }
+
+    if (previewState.estimatedTotal === null) {
+      filtersPreviewEl.textContent = '';
+      if (relaxFiltersBtn) relaxFiltersBtn.classList.add('hidden');
+      return;
+    }
+
+    const countText = _formatCount(previewState.estimatedTotal);
+    const summaryText = t('filters_pool_tmdb').replace('{count}', countText);
+
+    if (previewState.estimatedTotal <= 0) {
+      filtersPreviewEl.textContent = t('filters_no_matches');
+      filtersPreviewEl.classList.add('is-low');
+    } else if (previewState.lowResults) {
+      filtersPreviewEl.textContent = `${summaryText} ${t('filters_preview_low_short')}`;
+      filtersPreviewEl.classList.add('is-low');
+    } else {
+      filtersPreviewEl.textContent = summaryText;
+    }
+
+    const showRelax = _hasActiveCriteria()
+      && (previewState.lowResults || previewState.estimatedTotal <= 0);
+    if (relaxFiltersBtn) {
+      relaxFiltersBtn.textContent = t('filters_relax');
+      relaxFiltersBtn.classList.toggle('hidden', !showRelax);
+    }
+  }
+
+  function _saveFilters() {
+    try {
+      localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify({
+        ..._criteriaSnapshot(),
+        filters_open: filtersBody.classList.contains('is-open'),
+        advanced_open: advancedBody.classList.contains('is-open'),
+        auto_apply: autoApply,
+      }));
+    } catch (_) {}
+  }
+
+  function _recomputePending() {
+    pending = _criteriaHash() !== appliedCriteriaHash;
+    _updateApplyControls();
+  }
+
+  function _scheduleAutoApply() {
+    if (autoApplyTimer) clearTimeout(autoApplyTimer);
+    if (!autoApply || !pending || typeof applyHandler !== 'function') return;
+
+    autoApplyTimer = setTimeout(() => {
+      void applyNow();
+    }, 420);
+  }
+
+  function _schedulePreview() {
+    if (previewTimer) clearTimeout(previewTimer);
+    previewState = {
+      phase: 'loading',
+      estimatedTotal: null,
+      lowResults: false,
+      unavailable: false,
+    };
+    _renderPreview();
+    previewTimer = setTimeout(() => {
+      void requestPreview();
+    }, 260);
+  }
+
+  function _handleFilterChange({ clearPresets = true } = {}) {
+    if (clearPresets) _clearPresetHighlights();
+    _recomputePending();
+    _saveFilters();
+    _schedulePreview();
+    _scheduleAutoApply();
+  }
 
   function initDefaults() {
     ratingMin.min = 1.0;
@@ -115,25 +326,20 @@ export function createFiltersController({ elements, constants, deps }) {
   }
 
   function selectedCountriesQuery() {
-    return Array.from(selectedCountries).join(',');
+    return Array.from(selectedCountries).join('|');
   }
 
   function snapshotFilters() {
-    const { from, to } = getYearRange();
     return {
-      year_from: from,
-      year_to: to,
-      vote_avg_min: Number.parseFloat(ratingMin.value) || 1,
-      genres: Array.from(selectedGenres),
-      countries: Array.from(selectedCountries),
+      ..._criteriaSnapshot(),
       filters_open: filtersBody.classList.contains('is-open'),
+      advanced_open: advancedBody.classList.contains('is-open'),
+      auto_apply: autoApply,
     };
   }
 
   function saveFilters() {
-    try {
-      localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(snapshotFilters()));
-    } catch (_) {}
+    _saveFilters();
   }
 
   function restoreFilters() {
@@ -167,6 +373,8 @@ export function createFiltersController({ elements, constants, deps }) {
       }
 
       savedFiltersOpen = parsed.filters_open === true;
+      savedAdvancedOpen = parsed.advanced_open === true;
+      autoApply = parsed.auto_apply !== false;
     } catch (_) {}
   }
 
@@ -174,8 +382,12 @@ export function createFiltersController({ elements, constants, deps }) {
     return savedFiltersOpen;
   }
 
+  function isSavedAdvancedOpen() {
+    return savedAdvancedOpen;
+  }
+
   function clearActivePresets() {
-    [presetPopularBtn, presetTopBtn, presetRecentBtn].forEach((btn) => btn.classList.remove('is-active'));
+    _clearPresetHighlights();
   }
 
   function applyPreset(presetKey) {
@@ -204,12 +416,12 @@ export function createFiltersController({ elements, constants, deps }) {
     syncYearRange();
     updateRatingThumb();
 
-    clearActivePresets();
+    _clearPresetHighlights();
     if (presetKey === 'popular') presetPopularBtn.classList.add('is-active');
     if (presetKey === 'top') presetTopBtn.classList.add('is-active');
     if (presetKey === 'recent') presetRecentBtn.classList.add('is-active');
 
-    saveFilters();
+    _handleFilterChange({ clearPresets: false });
   }
 
   function openFilters() {
@@ -219,16 +431,43 @@ export function createFiltersController({ elements, constants, deps }) {
       filtersBody.style.maxHeight = `${filtersBody.scrollHeight}px`;
     });
     filtersToggle.setAttribute('aria-expanded', 'true');
-    filtersToggle.textContent = t('hide');
-    saveFilters();
+    _updateToggleTexts();
+    _saveFilters();
   }
 
   function closeFilters() {
     filtersBody.style.maxHeight = '0px';
     filtersBody.classList.remove('is-open');
     filtersToggle.setAttribute('aria-expanded', 'false');
-    filtersToggle.textContent = t('show');
-    saveFilters();
+    _updateToggleTexts();
+    _saveFilters();
+  }
+
+  function openAdvanced() {
+    advancedBody.classList.add('is-open');
+    advancedBody.style.maxHeight = '0px';
+    requestAnimationFrame(() => {
+      advancedBody.style.maxHeight = `${advancedBody.scrollHeight}px`;
+      _updateFiltersBodyHeight();
+    });
+    advancedToggle.setAttribute('aria-expanded', 'true');
+    _updateToggleTexts();
+    _saveFilters();
+  }
+
+  function closeAdvanced() {
+    advancedBody.style.maxHeight = '0px';
+    advancedBody.classList.remove('is-open');
+    advancedToggle.setAttribute('aria-expanded', 'false');
+    _updateToggleTexts();
+    _updateFiltersBodyHeight();
+    _saveFilters();
+  }
+
+  function toggleAdvanced() {
+    const expanded = advancedToggle.getAttribute('aria-expanded') === 'true';
+    if (expanded) closeAdvanced();
+    else openAdvanced();
   }
 
   function renderGenreChip(genre) {
@@ -252,8 +491,7 @@ export function createFiltersController({ elements, constants, deps }) {
       if (selectedGenres.has(id)) selectedGenres.delete(id);
       else selectedGenres.add(id);
       update();
-      clearActivePresets();
-      saveFilters();
+      _handleFilterChange();
     });
 
     update();
@@ -275,8 +513,7 @@ export function createFiltersController({ elements, constants, deps }) {
       if (selectedCountries.has(country.code)) selectedCountries.delete(country.code);
       else selectedCountries.add(country.code);
       update();
-      clearActivePresets();
-      saveFilters();
+      _handleFilterChange();
     });
 
     update();
@@ -285,8 +522,10 @@ export function createFiltersController({ elements, constants, deps }) {
 
   function loadCountries() {
     const wrap = document.getElementById('countryChips');
+    if (!wrap) return;
     wrap.innerHTML = '';
     countriesList.forEach((country) => wrap.appendChild(renderCountryChip(country)));
+    _updateFiltersBodyHeight();
   }
 
   async function loadGenres() {
@@ -296,6 +535,7 @@ export function createFiltersController({ elements, constants, deps }) {
       : `/api/genres?lang=${encodeURIComponent(langMap[getLang()])}`;
 
     const wrap = document.getElementById('genreChips');
+    if (!wrap) return;
     wrap.innerHTML = '';
 
     let raw;
@@ -338,58 +578,197 @@ export function createFiltersController({ elements, constants, deps }) {
     });
 
     genreSelectionSeed = new Set(selectedGenres);
-
-    if (filtersBody.classList.contains('is-open')) {
-      requestAnimationFrame(() => {
-        filtersBody.style.maxHeight = `${filtersBody.scrollHeight}px`;
-      });
-    }
-
-    saveFilters();
+    _saveFilters();
+    _updateAdvancedBodyHeight();
   }
 
   function clearSelections() {
     selectedGenres.clear();
     selectedCountries.clear();
     genreSelectionSeed = new Set();
+    _recomputePending();
+    _saveFilters();
   }
 
   async function resetFilters() {
     yrMin.value = String(YEAR_MIN);
     yrMax.value = String(YEAR_MAX);
     ratingMin.value = '1.0';
-    clearSelections();
+    selectedGenres.clear();
+    selectedCountries.clear();
+    genreSelectionSeed = new Set();
 
     syncYearRange();
     updateRatingThumb();
-    clearActivePresets();
+    _clearPresetHighlights();
 
     loadCountries();
     await loadGenres();
-
-    saveFilters();
+    _handleFilterChange({ clearPresets: false });
   }
 
   function handleYearMinInput() {
     yrMin.value = String(clamp(toYear(yrMin.value, YEAR_MIN), YEAR_MIN, YEAR_MAX));
     if (toYear(yrMin.value, YEAR_MIN) > toYear(yrMax.value, YEAR_MAX)) yrMax.value = yrMin.value;
-    clearActivePresets();
     syncYearRange();
-    saveFilters();
+    _handleFilterChange();
   }
 
   function handleYearMaxInput() {
     yrMax.value = String(clamp(toYear(yrMax.value, YEAR_MAX), YEAR_MIN, YEAR_MAX));
     if (toYear(yrMax.value, YEAR_MAX) < toYear(yrMin.value, YEAR_MIN)) yrMin.value = yrMax.value;
-    clearActivePresets();
     syncYearRange();
-    saveFilters();
+    _handleFilterChange();
   }
 
   function handleRatingInput() {
-    clearActivePresets();
     updateRatingThumb();
-    saveFilters();
+    _handleFilterChange();
+  }
+
+  function setAutoApply(nextValue) {
+    autoApply = Boolean(nextValue);
+    _updateApplyControls();
+    _saveFilters();
+    if (autoApply && pending) _scheduleAutoApply();
+  }
+
+  function toggleAutoApply() {
+    setAutoApply(!autoApply);
+  }
+
+  function isAutoApplyEnabled() {
+    return autoApply;
+  }
+
+  function setApplyHandler(handler) {
+    applyHandler = typeof handler === 'function' ? handler : null;
+    if (autoApply && pending) _scheduleAutoApply();
+  }
+
+  async function applyNow() {
+    if (!pending || applyInFlight || typeof applyHandler !== 'function') return false;
+    applyInFlight = true;
+    _updateApplyControls();
+    try {
+      const ok = await applyHandler();
+      if (ok) {
+        markApplied();
+        return true;
+      }
+      return false;
+    } finally {
+      applyInFlight = false;
+      _updateApplyControls();
+      if (autoApply && pending) _scheduleAutoApply();
+    }
+  }
+
+  function markApplied() {
+    appliedCriteriaHash = _criteriaHash();
+    pending = false;
+    _updateApplyControls();
+    _saveFilters();
+  }
+
+  function relaxFilters() {
+    const currentRating = Number.parseFloat(ratingMin.value) || 1;
+    const { from, to } = getYearRange();
+
+    let changed = false;
+    if (currentRating > 5.2) {
+      ratingMin.value = String(Math.max(1, currentRating - 0.8));
+      updateRatingThumb();
+      changed = true;
+    } else if (selectedGenres.size > 0) {
+      selectedGenres.clear();
+      genreSelectionSeed = new Set();
+      loadGenres();
+      changed = true;
+    } else if (selectedCountries.size > 0) {
+      selectedCountries.clear();
+      loadCountries();
+      changed = true;
+    } else if (from > YEAR_MIN || to < YEAR_MAX) {
+      yrMin.value = String(Math.max(YEAR_MIN, from - 12));
+      yrMax.value = String(Math.min(YEAR_MAX, to + 12));
+      syncYearRange();
+      changed = true;
+    }
+
+    if (!changed) return;
+    _clearPresetHighlights();
+    _handleFilterChange({ clearPresets: false });
+  }
+
+  async function requestPreview() {
+    const seq = ++previewRequestSeq;
+    const params = new URLSearchParams();
+    const criteria = _criteriaSnapshot();
+    params.set('year_from', String(criteria.year_from));
+    params.set('year_to', String(criteria.year_to));
+    params.set('vote_avg_min', String(criteria.vote_avg_min));
+    if (criteria.genres.length) params.set('genres', selectedGenresQuery());
+    if (criteria.countries.length) params.set('country', selectedCountriesQuery());
+
+    const isRU = getLang() === 'ru';
+    const url = isRU
+      ? `/api/filters_preview_ru?${params.toString()}`
+      : `/api/filters_preview?${params.toString()}&lang=${encodeURIComponent(langMap[getLang()])}`;
+
+    try {
+      const { ok, data } = await getJson(url, { cache: 'no-store' });
+      if (seq !== previewRequestSeq) return;
+      if (!ok || !data || data.unavailable) {
+        previewState = {
+          phase: 'done',
+          estimatedTotal: null,
+          lowResults: false,
+          unavailable: true,
+        };
+        _renderPreview();
+        return;
+      }
+
+      const total = Number.parseInt(String(data.estimated_total ?? ''), 10);
+      previewState = {
+        phase: 'done',
+        estimatedTotal: Number.isFinite(total) ? Math.max(0, total) : null,
+        lowResults: data.low_results === true || total <= 0,
+        unavailable: false,
+      };
+      _renderPreview();
+    } catch (_) {
+      if (seq !== previewRequestSeq) return;
+      previewState = {
+        phase: 'done',
+        estimatedTotal: null,
+        lowResults: false,
+        unavailable: true,
+      };
+      _renderPreview();
+    }
+  }
+
+  function refreshAfterLanguageChange() {
+    _updateToggleTexts();
+    _updateApplyControls();
+    _renderPreview();
+    _schedulePreview();
+  }
+
+  function finalizeInitState() {
+    appliedCriteriaHash = _criteriaHash();
+    pending = false;
+    _updateToggleTexts();
+    _updateApplyControls();
+    _schedulePreview();
+  }
+
+  function applyTranslations() {
+    _updateToggleTexts();
+    _updateApplyControls();
+    _renderPreview();
   }
 
   return {
@@ -399,13 +778,18 @@ export function createFiltersController({ elements, constants, deps }) {
     updateRatingThumb,
     selectedGenresQuery,
     selectedCountriesQuery,
+    snapshotFilters,
     saveFilters,
     restoreFilters,
     isSavedFiltersOpen,
+    isSavedAdvancedOpen,
     clearActivePresets,
     applyPreset,
     openFilters,
     closeFilters,
+    openAdvanced,
+    closeAdvanced,
+    toggleAdvanced,
     loadCountries,
     loadGenres,
     clearSelections,
@@ -413,5 +797,16 @@ export function createFiltersController({ elements, constants, deps }) {
     handleYearMinInput,
     handleYearMaxInput,
     handleRatingInput,
+    setAutoApply,
+    toggleAutoApply,
+    isAutoApplyEnabled,
+    setApplyHandler,
+    applyNow,
+    markApplied,
+    relaxFilters,
+    requestPreview,
+    refreshAfterLanguageChange,
+    finalizeInitState,
+    applyTranslations,
   };
 }

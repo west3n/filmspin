@@ -78,6 +78,15 @@ body {
   transition: color 220ms ease;
 }
 
+.discovery-meter {
+  min-height: 1.2em;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #95afd8;
+  opacity: 0.92;
+}
+
 .hero-slogan.is-idle {
   color: #c6dbff;
 }
@@ -145,4 +154,3 @@ body {
   outline: 2px solid rgba(110, 157, 255, 0.92);
   outline-offset: 2px;
 }
-
