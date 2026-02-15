@@ -1,4 +1,4 @@
-import { I18N, langMap } from './modules/i18n.js?v=26';
+import { I18N, langMap } from './modules/i18n.js?v=27';
 import { getJson } from './modules/http.js?v=22';
 
 const FILTERS_STORAGE_KEY = 'fs_filters_v2';
@@ -520,6 +520,21 @@ function loadCountries() {
   countriesList.forEach((country) => wrap.appendChild(renderCountryChip(country)));
 }
 
+function toNamesList(raw) {
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => String(item || '').trim())
+      .filter(Boolean);
+  }
+  if (typeof raw === 'string') {
+    return raw
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 async function loadGenres() {
   const isRU = getLang() === 'ru';
   const url = isRU
@@ -597,6 +612,38 @@ function renderCard(data) {
   if (Array.isArray(data.genres) && data.genres.length) metaChunks.push(data.genres.join(' · '));
   if (Array.isArray(data.countries) && data.countries.length) metaChunks.push(data.countries.join(', '));
   metaEl.textContent = metaChunks.join('   •   ');
+
+  const peopleEl = document.getElementById('people');
+  const directorRowEl = document.getElementById('directorRow');
+  const castRowEl = document.getElementById('castRow');
+  const directorLabelEl = document.getElementById('directorLabel');
+  const castLabelEl = document.getElementById('castLabel');
+  const directorValueEl = document.getElementById('directorValue');
+  const castValueEl = document.getElementById('castValue');
+
+  const directors = toNamesList(data.directors);
+  const cast = toNamesList(data.cast);
+
+  directorLabelEl.textContent = `${t('people_director')}:`;
+  castLabelEl.textContent = `${t('people_cast')}:`;
+
+  if (directors.length) {
+    directorValueEl.textContent = directors.join(', ');
+    directorRowEl.classList.remove('hidden');
+  } else {
+    directorValueEl.textContent = '';
+    directorRowEl.classList.add('hidden');
+  }
+
+  if (cast.length) {
+    castValueEl.textContent = cast.join(', ');
+    castRowEl.classList.remove('hidden');
+  } else {
+    castValueEl.textContent = '';
+    castRowEl.classList.add('hidden');
+  }
+
+  peopleEl.classList.toggle('hidden', directors.length === 0 && cast.length === 0);
 
   document.getElementById('overview').textContent = data.overview || '—';
 
@@ -755,6 +802,8 @@ function applyStaticTranslations() {
   document.getElementById('yearRangeLabel').textContent = t('year_range');
   document.getElementById('countriesLabel').textContent = t('countries');
   document.getElementById('genresLabel').textContent = t('genres');
+  document.getElementById('directorLabel').textContent = `${t('people_director')}:`;
+  document.getElementById('castLabel').textContent = `${t('people_cast')}:`;
   document.getElementById('minRatingLabel').textContent = t('min_rating');
   document.getElementById('countriesHint').textContent = t('multi_select_hint');
   document.getElementById('genresHint').textContent = t('multi_select_hint');

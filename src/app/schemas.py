@@ -32,6 +32,8 @@ class MovieCard(BaseModel):
     overview: str = ""
     genres: list[str] = Field(default_factory=list)
     countries: list[str] = Field(default_factory=list)
+    directors: list[str] = Field(default_factory=list)
+    cast: list[str] = Field(default_factory=list)
     poster: Optional[str] = None
     backdrop: Optional[str] = None
     tmdb_id: Optional[int] = None

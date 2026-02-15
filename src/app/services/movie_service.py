@@ -5,6 +5,10 @@ from ..core.config import TTL_MOVIE_DETAIL, TTL_OMDB_NEGATIVE
 from ..repositories import CacheRepository, MappingRepository
 from ..schemas import MovieCard
 
+CACHE_SCHEMA_VERSION = "v2"
+MAX_DIRECTOR_NAMES = 3
+MAX_CAST_NAMES = 5
+
 
 class MovieResolverService:
     def __init__(
@@ -41,7 +45,7 @@ class MovieResolverService:
                 await self.mappings.set_map(tmdb_id, kp_id, imdb_id)
 
         if tmdb_id:
-            norm_key = f"norm:movie:{tmdb_id}:{lang}"
+            norm_key = f"norm:movie:{CACHE_SCHEMA_VERSION}:{tmdb_id}:{lang}"
             hit, cached = await self.cache.get_json_hit(norm_key)
             if hit and isinstance(cached, dict):
                 return MovieCard.model_validate(cached)
@@ -84,7 +88,9 @@ class MovieResolverService:
 
         if tmdb_id:
             await self.cache.set_json(
-                f"norm:movie:{tmdb_id}:ru-RU", card.model_dump(), TTL_MOVIE_DETAIL
+                f"norm:movie:{CACHE_SCHEMA_VERSION}:{tmdb_id}:ru-RU",
+                card.model_dump(),
+                TTL_MOVIE_DETAIL,
             )
         return card
 
@@ -120,18 +126,20 @@ class MovieResolverService:
         imdb_extra = await self._get_omdb_rating(imdb_id)
         card = self._normalize_tmdb(tmdb_raw, imdb_extra)
         await self.cache.set_json(
-            f"norm:movie:{tmdb_id}:{lang}", card.model_dump(), TTL_MOVIE_DETAIL
+            f"norm:movie:{CACHE_SCHEMA_VERSION}:{tmdb_id}:{lang}",
+            card.model_dump(),
+            TTL_MOVIE_DETAIL,
         )
         return card
 
     async def _get_tmdb_details(self, tmdb_id: int, lang: str) -> dict[str, Any]:
-        key = f"raw:tmdb:{tmdb_id}:{lang}"
+        key = f"raw:tmdb:{CACHE_SCHEMA_VERSION}:{tmdb_id}:{lang}"
         hit, cached = await self.cache.get_json_hit(key)
         if hit and isinstance(cached, dict):
             return cached
         details = await self.tmdb.get(
             f"/movie/{tmdb_id}",
-            {"append_to_response": "external_ids", "language": lang},
+            {"append_to_response": "external_ids,credits", "language": lang},
         )
         await self.cache.set_json(key, details, TTL_MOVIE_DETAIL)
         return details
@@ -189,6 +197,8 @@ class MovieResolverService:
     def _normalize_tmdb(details: dict[str, Any], imdb_extra: Optional[dict[str, Any]]) -> MovieCard:
         imdb_id = (details.get("external_ids") or {}).get("imdb_id")
         prod = details.get("production_countries") or []
+        directors = MovieResolverService._extract_tmdb_directors(details)
+        cast = MovieResolverService._extract_tmdb_cast(details)
         countries = (
             [(c.get("name") or c.get("iso_3166_1")) for c in prod]
             or details.get("origin_country")
@@ -214,6 +224,8 @@ class MovieResolverService:
                 if isinstance(g, dict) and g.get("name")
             ],
             countries=[str(c) for c in countries if c],
+            directors=directors,
+            cast=cast,
             poster=poster,
             backdrop=backdrop,
             tmdb_id=details.get("id"),
@@ -234,6 +246,8 @@ class MovieResolverService:
         external = movie.get("externalId") if isinstance(movie.get("externalId"), dict) else {}
         rating = movie.get("rating") if isinstance(movie.get("rating"), dict) else {}
         votes = movie.get("votes") if isinstance(movie.get("votes"), dict) else {}
+        directors = MovieResolverService._extract_kp_people(movie, role="director")
+        cast = MovieResolverService._extract_kp_people(movie, role="actor")
         imdb_id = external.get("imdb")
         kp_id = movie.get("id")
         return MovieCard(
@@ -250,6 +264,8 @@ class MovieResolverService:
                 for c in (movie.get("countries") or [])
                 if isinstance(c, dict) and c.get("name")
             ],
+            directors=directors,
+            cast=cast,
             poster=((movie.get("poster") or {}).get("url") if isinstance(movie.get("poster"), dict) else None),
             backdrop=((movie.get("backdrop") or {}).get("url") if isinstance(movie.get("backdrop"), dict) else None),
             tmdb_id=external.get("tmdb"),
@@ -264,3 +280,83 @@ class MovieResolverService:
             kp_url=f"https://www.kinopoisk.ru/film/{kp_id}/" if kp_id else None,
             tmdb_url=None,
         )
+
+    @staticmethod
+    def _dedupe_names(values: list[str], *, limit: int) -> list[str]:
+        unique: list[str] = []
+        seen: set[str] = set()
+        for raw in values:
+            name = str(raw or "").strip()
+            if not name:
+                continue
+            norm = name.casefold()
+            if norm in seen:
+                continue
+            seen.add(norm)
+            unique.append(name)
+            if len(unique) >= limit:
+                break
+        return unique
+
+    @staticmethod
+    def _extract_tmdb_directors(details: dict[str, Any]) -> list[str]:
+        credits = details.get("credits")
+        if not isinstance(credits, dict):
+            return []
+        crew = credits.get("crew")
+        if not isinstance(crew, list):
+            return []
+        names: list[str] = []
+        for row in crew:
+            if not isinstance(row, dict):
+                continue
+            job = str(row.get("job") or "").strip().casefold()
+            if "director" not in job:
+                continue
+            if "assistant" in job or "casting" in job:
+                continue
+            name = row.get("name") or row.get("original_name")
+            if name:
+                names.append(str(name))
+        return MovieResolverService._dedupe_names(names, limit=MAX_DIRECTOR_NAMES)
+
+    @staticmethod
+    def _extract_tmdb_cast(details: dict[str, Any]) -> list[str]:
+        credits = details.get("credits")
+        if not isinstance(credits, dict):
+            return []
+        cast = credits.get("cast")
+        if not isinstance(cast, list):
+            return []
+        names = [
+            str(row.get("name") or row.get("original_name"))
+            for row in cast
+            if isinstance(row, dict) and (row.get("name") or row.get("original_name"))
+        ]
+        return MovieResolverService._dedupe_names(names, limit=MAX_CAST_NAMES)
+
+    @staticmethod
+    def _extract_kp_people(movie: dict[str, Any], *, role: str) -> list[str]:
+        people = movie.get("persons")
+        if not isinstance(people, list):
+            return []
+        names: list[str] = []
+        for row in people:
+            if not isinstance(row, dict):
+                continue
+            en_prof = str(row.get("enProfession") or "").strip().casefold()
+            prof = str(row.get("profession") or "").strip().casefold()
+            haystack = (en_prof, prof)
+            if role == "director":
+                match = any("director" in p or "режиссер" in p for p in haystack)
+            else:
+                match = any(
+                    "actor" in p or "актер" in p or "актриса" in p for p in haystack
+                )
+            if not match:
+                continue
+            name = row.get("name") or row.get("enName")
+            if name:
+                names.append(str(name))
+        limit = MAX_DIRECTOR_NAMES if role == "director" else MAX_CAST_NAMES
+        return MovieResolverService._dedupe_names(names, limit=limit)

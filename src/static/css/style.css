@@ -627,6 +627,26 @@ body {
   text-transform: uppercase;
 }
 
+.people-block {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.people-row {
+  margin: 0;
+  color: #c8dbff;
+  font-size: 0.93rem;
+  line-height: 1.42;
+}
+
+.people-label {
+  color: #8ea7d1;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
 .movie-overview {
   margin-top: 14px;
   color: #cddfff;
@@ -1061,6 +1081,20 @@ body {
     font-size: 11px;
   }
 
+  .people-block {
+    margin-top: 6px;
+    gap: 3px;
+  }
+
+  .people-row {
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .people-label {
+    margin-right: 5px;
+  }
+
   .movie-overview {
     margin-top: 8px;
     font-size: 0.93rem;
@@ -1098,6 +1132,10 @@ body {
   .movie-overview {
     font-size: 0.89rem;
     -webkit-line-clamp: 5;
+  }
+
+  .people-row {
+    font-size: 0.8rem;
   }
 }
 
