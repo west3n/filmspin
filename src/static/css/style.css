@@ -509,6 +509,7 @@ body {
   opacity: 0.92;
   pointer-events: none;
   border-radius: 50%;
+  border-color: rgba(122, 168, 255, 0.86);
   width: 78px;
   height: 78px;
   padding: 0;
@@ -1006,13 +1007,16 @@ body {
   }
 
   .cta-inner {
-  width: 100%;
-  padding: 8px;
-  border-radius: 14px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    border-radius: 14px;
     background: rgba(2, 6, 14, 0.94);
     border: 1px solid rgba(88, 128, 210, 0.16);
-  backdrop-filter: blur(8px);
-}
+    backdrop-filter: blur(8px);
+  }
 
   #spin {
     width: 100%;
