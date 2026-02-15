@@ -32,6 +32,14 @@ class FiltersPreviewOut(BaseModel):
     unavailable: bool = False
 
 
+class WatchOffer(BaseModel):
+    id: Optional[int] = None
+    name: str
+    logo: Optional[str] = None
+    type: Optional[str] = None
+    link: Optional[str] = None
+
+
 class MovieCard(BaseModel):
     title: str = ""
     year: Optional[Union[int, str]] = None
@@ -43,6 +51,7 @@ class MovieCard(BaseModel):
     cast: list[str] = Field(default_factory=list)
     recommendation_reason: Optional[str] = None
     watch_providers: list[str] = Field(default_factory=list)
+    watch_offers: list[WatchOffer] = Field(default_factory=list)
     watch_url: Optional[str] = None
     poster: Optional[str] = None
     backdrop: Optional[str] = None

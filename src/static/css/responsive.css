@@ -97,12 +97,6 @@
     font-size: 11px;
   }
 
-  .reason-row {
-    margin-top: 6px;
-    font-size: 0.8rem;
-    line-height: 1.35;
-  }
-
   .people-block {
     margin-top: 6px;
     gap: 3px;
@@ -135,16 +129,33 @@
 
   .watch-row {
     margin-top: 8px;
-    font-size: 0.82rem;
+    padding: 8px;
   }
 
-  .card-actions {
-    margin-top: 10px;
-    gap: 6px;
+  .watch-head {
+    margin-bottom: 7px;
   }
 
-  .card-action-btn {
-    font-size: 11px;
+  .watch-label {
+    font-size: 0.74rem;
+  }
+
+  .watch-open-all {
+    font-size: 0.72rem;
+  }
+
+  .watch-provider {
+    padding: 5px 9px 5px 5px;
+    font-size: 0.76rem;
+  }
+
+  .watch-provider-logo {
+    width: 19px;
+    height: 19px;
+  }
+
+  .watch-provider-name {
+    max-width: 120px;
   }
 
   .apply-controls {
@@ -188,6 +199,10 @@
     font-size: 0.8rem;
   }
 
+  .watch-provider-name {
+    max-width: 104px;
+  }
+
   .apply-controls {
     flex-direction: column;
     align-items: stretch;
@@ -211,9 +226,6 @@
     width: 100%;
   }
 
-  .card-action-btn {
-    width: 100%;
-  }
 }
 
 @media (max-width: 600px) {

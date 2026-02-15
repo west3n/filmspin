@@ -1,4 +1,4 @@
-import { I18N, langMap } from './modules/i18n.js?v=30';
+import { I18N, langMap } from './modules/i18n.js?v=31';
 import { getJson } from './modules/http.js?v=22';
 import {
   FILTERS_STORAGE_KEY,
@@ -11,7 +11,7 @@ import { clamp, toYear, valueToColor } from './modules/app/helpers.js?v=1';
 import { createStatusController } from './modules/app/status.js?v=1';
 import { createSpinButtonController } from './modules/app/spin_button.js?v=1';
 import { createFiltersController } from './modules/app/filters.js?v=4';
-import { createCardController } from './modules/app/card.js?v=2';
+import { createCardController } from './modules/app/card.js?v=4';
 
 const ratingMin = document.getElementById('ratingMin');
 const ratingVal = document.getElementById('ratingVal');
@@ -56,8 +56,6 @@ const runtimeStandardBtn = document.getElementById('runtimeStandard');
 const runtimeLongBtn = document.getElementById('runtimeLong');
 
 const publicConfig = { ru_enabled: true };
-const EXCLUDED_TMDB_KEY = 'fs_excluded_tmdb_v1';
-const EXCLUDED_KP_KEY = 'fs_excluded_kp_v1';
 
 function isRuEnabled() {
   return publicConfig.ru_enabled !== false;
@@ -76,53 +74,6 @@ function setLang(v) {
 function t(key) {
   const lang = getLang();
   return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
-}
-
-function readIdSet(storageKey) {
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return new Set();
-    return new Set(
-      parsed
-        .map((value) => Number.parseInt(String(value), 10))
-        .filter((value) => Number.isFinite(value)),
-    );
-  } catch (_) {
-    return new Set();
-  }
-}
-
-function writeIdSet(storageKey, setValue) {
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(Array.from(setValue).slice(-500)));
-  } catch (_) {}
-}
-
-const excludedTmdbIds = readIdSet(EXCLUDED_TMDB_KEY);
-const excludedKpIds = readIdSet(EXCLUDED_KP_KEY);
-
-function getExclusionsPayload() {
-  return {
-    tmdb: Array.from(excludedTmdbIds).slice(-150),
-    kp: Array.from(excludedKpIds).slice(-150),
-  };
-}
-
-function markMovieExcluded(moviePayload, { watched = false } = {}) {
-  const tmdbId = Number.parseInt(String(moviePayload?.tmdb_id ?? ''), 10);
-  const kpId = Number.parseInt(String(moviePayload?.kp_id ?? ''), 10);
-  if (Number.isFinite(tmdbId)) excludedTmdbIds.add(tmdbId);
-  if (Number.isFinite(kpId)) excludedKpIds.add(kpId);
-  writeIdSet(EXCLUDED_TMDB_KEY, excludedTmdbIds);
-  writeIdSet(EXCLUDED_KP_KEY, excludedKpIds);
-  statusController.showStatus(
-    'success',
-    watched ? t('status_marked_watched') : t('status_hidden_movie'),
-    { autoclear: true },
-  );
-  void filtersController.requestPreview();
 }
 
 const statusController = createStatusController({ sloganEl, statusEl, t });
@@ -167,7 +118,6 @@ const filtersController = createFiltersController({
     langMap,
     t,
     getJson,
-    getExclusionsPayload,
     showStatus: statusController.showStatus,
     clamp,
     toYear,
@@ -177,15 +127,6 @@ const filtersController = createFiltersController({
 const cardController = createCardController({
   elements: { resultEl },
   deps: { getLang, t, getJson, langMap },
-});
-
-cardController.setActionHandlers({
-  watched: (payload) => {
-    markMovieExcluded(payload, { watched: true });
-  },
-  hide: (payload) => {
-    markMovieExcluded(payload, { watched: false });
-  },
 });
 
 filtersController.initDefaults();
@@ -224,9 +165,6 @@ async function spin() {
     if (genres) params.set('genres', genres);
     if (countries) params.set('country', countries);
     params.set('vote_avg_min', ratingMin.value);
-    const exclusions = getExclusionsPayload();
-    if (exclusions.tmdb.length) params.set('exclude_tmdb', exclusions.tmdb.join('|'));
-    if (exclusions.kp.length) params.set('exclude_kp', exclusions.kp.join('|'));
 
     const isRU = getLang() === 'ru';
     const url = isRU
@@ -278,6 +216,8 @@ function applyStaticTranslations() {
   document.getElementById('genresLabel').textContent = t('genres');
   document.getElementById('directorLabel').textContent = `${t('people_director')}:`;
   document.getElementById('castLabel').textContent = `${t('people_cast')}:`;
+  document.getElementById('watchLabel').textContent = t('watch_label');
+  document.getElementById('watchOpenAll').textContent = t('watch_open_all');
   document.getElementById('minRatingLabel').textContent = t('min_rating');
   moodLabelEl.textContent = t('mood_label');
   moodEasyBtn.textContent = t('mood_easy');

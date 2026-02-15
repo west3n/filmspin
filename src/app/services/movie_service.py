@@ -5,7 +5,7 @@ from ..core.config import TTL_MOVIE_DETAIL, TTL_OMDB_NEGATIVE
 from ..repositories import CacheRepository, MappingRepository
 from ..schemas import MovieCard
 
-CACHE_SCHEMA_VERSION = "v2"
+CACHE_SCHEMA_VERSION = "v3"
 MAX_DIRECTOR_NAMES = 3
 MAX_CAST_NAMES = 5
 
@@ -97,18 +97,26 @@ class MovieResolverService:
             await self.mappings.set_map(tmdb_id, None, imdb_id)
             imdb_extra = await self._get_omdb_rating(imdb_id)
             watch_payload = await self._get_tmdb_watch_providers(tmdb_id)
-            watch_providers, watch_url = self._extract_watch_data(watch_payload, watch_region)
+            watch_providers, watch_url, watch_offers = self._extract_watch_data(
+                watch_payload,
+                watch_region,
+            )
             card = self._normalize_tmdb(
                 tmdb_raw,
                 imdb_extra,
                 watch_providers=watch_providers,
+                watch_offers=watch_offers,
                 watch_url=watch_url,
             )
 
         if tmdb_id:
             watch_payload = await self._get_tmdb_watch_providers(tmdb_id)
-            watch_providers, watch_url = self._extract_watch_data(watch_payload, watch_region)
+            watch_providers, watch_url, watch_offers = self._extract_watch_data(
+                watch_payload,
+                watch_region,
+            )
             card.watch_providers = watch_providers
+            card.watch_offers = watch_offers
             card.watch_url = watch_url
 
         if tmdb_id:
@@ -151,11 +159,15 @@ class MovieResolverService:
         await self.mappings.set_map(tmdb_id, kp_id, imdb_id)
         imdb_extra = await self._get_omdb_rating(imdb_id)
         watch_payload = await self._get_tmdb_watch_providers(tmdb_id)
-        watch_providers, watch_url = self._extract_watch_data(watch_payload, watch_region)
+        watch_providers, watch_url, watch_offers = self._extract_watch_data(
+            watch_payload,
+            watch_region,
+        )
         card = self._normalize_tmdb(
             tmdb_raw,
             imdb_extra,
             watch_providers=watch_providers,
+            watch_offers=watch_offers,
             watch_url=watch_url,
         )
         await self.cache.set_json(
@@ -241,6 +253,7 @@ class MovieResolverService:
         imdb_extra: Optional[dict[str, Any]],
         *,
         watch_providers: list[str],
+        watch_offers: list[dict[str, Any]],
         watch_url: Optional[str],
     ) -> MovieCard:
         imdb_id = (details.get("external_ids") or {}).get("imdb_id")
@@ -276,6 +289,7 @@ class MovieResolverService:
             directors=directors,
             cast=cast,
             watch_providers=watch_providers,
+            watch_offers=watch_offers,
             watch_url=watch_url,
             poster=poster,
             backdrop=backdrop,
@@ -318,6 +332,7 @@ class MovieResolverService:
             ],
             directors=directors,
             cast=cast,
+            watch_offers=[],
             poster=((movie.get("poster") or {}).get("url") if isinstance(movie.get("poster"), dict) else None),
             backdrop=((movie.get("backdrop") or {}).get("url") if isinstance(movie.get("backdrop"), dict) else None),
             tmdb_id=external.get("tmdb"),
@@ -341,14 +356,18 @@ class MovieResolverService:
         return "RU" if lang.startswith("ru") else "US"
 
     @staticmethod
-    def _extract_watch_data(payload: dict[str, Any], region: str) -> tuple[list[str], Optional[str]]:
+    def _extract_watch_data(
+        payload: dict[str, Any],
+        region: str,
+    ) -> tuple[list[str], Optional[str], list[dict[str, Any]]]:
         results = payload.get("results")
         if not isinstance(results, dict):
-            return [], None
+            return [], None, []
         region_payload = results.get(region)
         if not isinstance(region_payload, dict):
-            return [], None
-        names: list[str] = []
+            return [], None, []
+        offers: list[dict[str, Any]] = []
+        seen: set[str] = set()
         for key in ("flatrate", "ads", "rent", "buy"):
             values = region_payload.get(key)
             if not isinstance(values, list):
@@ -357,11 +376,37 @@ class MovieResolverService:
                 if not isinstance(row, dict):
                     continue
                 name = row.get("provider_name")
-                if name:
-                    names.append(str(name))
-        deduped = MovieResolverService._dedupe_names(names, limit=5)
+                if not name:
+                    continue
+                norm = str(name).strip().casefold()
+                if not norm or norm in seen:
+                    continue
+                seen.add(norm)
+                provider_id = MovieResolverService._safe_int(row.get("provider_id"))
+                logo_path = row.get("logo_path")
+                logo = (
+                    f"https://image.tmdb.org/t/p/w92{logo_path}"
+                    if isinstance(logo_path, str) and logo_path
+                    else None
+                )
+                offers.append(
+                    {
+                        "id": provider_id,
+                        "name": str(name),
+                        "logo": logo,
+                        "type": key,
+                    }
+                )
+                if len(offers) >= 8:
+                    break
+            if len(offers) >= 8:
+                break
+        deduped = [offer["name"] for offer in offers]
         link = region_payload.get("link")
-        return deduped, str(link) if link else None
+        link_value = str(link) if link else None
+        for offer in offers:
+            offer["link"] = link_value
+        return deduped, link_value, offers
 
     @staticmethod
     def _safe_int(value: Any) -> Optional[int]:

@@ -38,7 +38,7 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=47">
+  <link rel="stylesheet" href="/css/style.css?v=49">
 </head>
 <body class="min-h-screen text-zinc-100">
   <main class="site-shell max-w-5xl mx-auto px-4 sm:px-6 pb-14">
@@ -180,7 +180,6 @@
         <div class="flex-1 min-w-0">
           <h2 id="title" class="movie-title"></h2>
           <p id="meta" class="movie-meta"></p>
-          <p id="reasonRow" class="reason-row hidden"></p>
           <div id="people" class="people-block hidden">
             <p id="directorRow" class="people-row hidden">
               <span id="directorLabel" class="people-label">Director:</span>
@@ -198,11 +197,13 @@
               <span id="imdbRating" class="hidden inline-flex items-center gap-1"></span>
             </div>
           </div>
-          <p id="watchRow" class="watch-row hidden"></p>
-          <div class="card-actions">
-            <button id="actionWatched" class="tool-btn card-action-btn" type="button">Watched</button>
-            <button id="actionHideMovie" class="tool-btn card-action-btn" type="button">Don't show again</button>
-          </div>
+          <section id="watchRow" class="watch-row hidden" aria-label="Where to watch">
+            <div class="watch-head">
+              <p id="watchLabel" class="watch-label">Where to watch</p>
+              <a id="watchOpenAll" class="watch-open-all hidden underline hover:no-underline" target="_blank" rel="noopener">Open all options</a>
+            </div>
+            <div id="watchProviders" class="watch-providers"></div>
+          </section>
         </div>
       </div>
     </section>
@@ -218,6 +219,6 @@
     </footer>
   </main>
 
-  <script type="module" defer src="/js/app.js?v=41"></script>
+  <script type="module" defer src="/js/app.js?v=43"></script>
 </body>
 </html>

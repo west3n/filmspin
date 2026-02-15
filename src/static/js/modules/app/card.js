@@ -5,7 +5,6 @@ export function createCardController({ elements, deps }) {
   const { getLang, t, getJson, langMap } = deps;
 
   let currentMovie = null;
-  let actionHandlers = { watched: null, hide: null };
 
   function hideResultCard() {
     if (!resultEl) return;
@@ -46,10 +45,6 @@ export function createCardController({ elements, deps }) {
     if (Array.isArray(data.countries) && data.countries.length) metaChunks.push(data.countries.join(', '));
     if (Number.isFinite(Number(data.runtime_minutes))) metaChunks.push(`${Number(data.runtime_minutes)} min`);
     metaEl.textContent = metaChunks.join('   •   ');
-
-    const reasonRowEl = document.getElementById('reasonRow');
-    reasonRowEl.textContent = data.recommendation_reason || t('card_reason_fallback');
-    reasonRowEl.classList.remove('hidden');
 
     const peopleEl = document.getElementById('people');
     const directorRowEl = document.getElementById('directorRow');
@@ -133,47 +128,67 @@ export function createCardController({ elements, deps }) {
     }
 
     const watchRowEl = document.getElementById('watchRow');
-    const providers = Array.isArray(data.watch_providers) ? data.watch_providers.filter(Boolean) : [];
+    const watchLabelEl = document.getElementById('watchLabel');
+    const watchOpenAllEl = document.getElementById('watchOpenAll');
+    const watchProvidersEl = document.getElementById('watchProviders');
+    const watchOffers = Array.isArray(data.watch_offers) ? data.watch_offers.filter((item) => item && item.name) : [];
+    const providersFallback = Array.isArray(data.watch_providers) ? data.watch_providers.filter(Boolean) : [];
+    const providers = watchOffers.length
+      ? watchOffers.map((offer) => ({
+        name: String(offer.name),
+        logo: offer.logo ? String(offer.logo) : null,
+        link: offer.link ? String(offer.link) : null,
+      }))
+      : providersFallback.map((name) => ({ name: String(name), logo: null, link: null }));
+
+    watchLabelEl.textContent = t('watch_label');
+    watchOpenAllEl.textContent = t('watch_open_all');
+    watchProvidersEl.innerHTML = '';
+
     if (providers.length) {
-      const label = t('watch_label');
-      const providersText = providers.join(', ');
-      if (data.watch_url) {
-        watchRowEl.innerHTML = `${label}: ${providersText} · <a href="${data.watch_url}" target="_blank" rel="noopener" class="underline hover:no-underline">${t('watch_open')}</a>`;
+      const openLink = data.watch_url ? String(data.watch_url) : null;
+      if (openLink) {
+        watchOpenAllEl.href = openLink;
+        watchOpenAllEl.classList.remove('hidden');
       } else {
-        watchRowEl.textContent = `${label}: ${providersText}`;
+        watchOpenAllEl.removeAttribute('href');
+        watchOpenAllEl.classList.add('hidden');
       }
+
+      providers.forEach((provider) => {
+        const href = provider.link || openLink;
+        const itemEl = href ? document.createElement('a') : document.createElement('span');
+        itemEl.className = 'watch-provider';
+        if (href) {
+          itemEl.href = href;
+          itemEl.target = '_blank';
+          itemEl.rel = 'noopener';
+          itemEl.title = t('watch_provider_fallback');
+        }
+
+        if (provider.logo) {
+          const logoEl = document.createElement('img');
+          logoEl.className = 'watch-provider-logo';
+          logoEl.src = provider.logo;
+          logoEl.alt = provider.name;
+          logoEl.loading = 'lazy';
+          itemEl.appendChild(logoEl);
+        }
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'watch-provider-name';
+        nameEl.textContent = provider.name;
+        itemEl.appendChild(nameEl);
+        watchProvidersEl.appendChild(itemEl);
+      });
+
       watchRowEl.classList.remove('hidden');
     } else {
       watchRowEl.classList.add('hidden');
-      watchRowEl.textContent = '';
-      watchRowEl.innerHTML = '';
+      watchOpenAllEl.classList.add('hidden');
+      watchOpenAllEl.removeAttribute('href');
     }
 
-    const actionWatchedBtn = document.getElementById('actionWatched');
-    const actionHideBtn = document.getElementById('actionHideMovie');
-    actionWatchedBtn.textContent = t('action_watched');
-    actionHideBtn.textContent = t('action_hide_movie');
-
-    const payload = {
-      tmdb_id: data.tmdb_id || null,
-      kp_id: data.kp_id || null,
-      imdb_id: data.imdb_id || null,
-      title: data.title || null,
-    };
-
-    actionWatchedBtn.onclick = () => {
-      if (typeof actionHandlers.watched === 'function') actionHandlers.watched(payload);
-    };
-    actionHideBtn.onclick = () => {
-      if (typeof actionHandlers.hide === 'function') actionHandlers.hide(payload);
-    };
-  }
-
-  function setActionHandlers(handlers = {}) {
-    actionHandlers = {
-      watched: typeof handlers.watched === 'function' ? handlers.watched : null,
-      hide: typeof handlers.hide === 'function' ? handlers.hide : null,
-    };
   }
 
   async function reloadCurrentInNewLang() {
@@ -217,7 +232,6 @@ export function createCardController({ elements, deps }) {
     renderCard,
     setCurrentMovieFromData,
     clearCurrentMovie,
-    setActionHandlers,
     reloadCurrentInNewLang,
   };
 }
