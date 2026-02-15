@@ -17,6 +17,20 @@
   flex-wrap: wrap;
 }
 
+.mood-tools {
+  margin-top: 2px;
+}
+
+.mood-tools .year-label {
+  margin-bottom: 8px;
+}
+
+.mood-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .apply-controls {
   display: flex;
   align-items: center;
@@ -283,6 +297,12 @@
   border-color: rgba(93, 138, 217, 0.95);
   color: #0c1832;
   background: linear-gradient(135deg, #76a5ff, #4f7ed0);
+}
+
+.runtime-chip.is-active {
+  border-color: rgba(116, 170, 255, 0.95);
+  color: #e9f4ff;
+  background: linear-gradient(135deg, rgba(42, 81, 150, 0.5), rgba(23, 49, 100, 0.35));
 }
 
 .hint-text {

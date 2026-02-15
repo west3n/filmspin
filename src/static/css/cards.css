@@ -42,6 +42,13 @@
   text-transform: uppercase;
 }
 
+.reason-row {
+  margin-top: 8px;
+  color: #93b0dd;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
 .people-block {
   margin-top: 10px;
   display: flex;
@@ -74,6 +81,25 @@
   font-size: 0.98rem;
   line-height: 1.6;
   color: #bfd3f8;
+}
+
+.watch-row {
+  margin-top: 10px;
+  color: #a7c1e8;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.card-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-action-btn {
+  font-size: 12px;
+  padding: 6px 10px;
 }
 
 .ratings-row a {
@@ -128,4 +154,3 @@
 .sep-dot {
   margin: 0 5px;
 }
-

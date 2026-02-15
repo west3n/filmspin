@@ -14,6 +14,10 @@ export function createFiltersController({ elements, constants, deps }) {
     presetPopularBtn,
     presetTopBtn,
     presetRecentBtn,
+    moodEasyBtn,
+    moodTenseBtn,
+    moodWarmBtn,
+    moodMindbenderBtn,
     advancedBody,
     advancedToggle,
     autoApplyToggle,
@@ -36,6 +40,7 @@ export function createFiltersController({ elements, constants, deps }) {
     langMap,
     t,
     getJson,
+    getExclusionsPayload,
     showStatus,
     clamp,
     toYear,
@@ -64,12 +69,65 @@ export function createFiltersController({ elements, constants, deps }) {
     lowResults: false,
     unavailable: false,
   };
+  let runtimeMin = null;
+  let runtimeMax = null;
+  let activeMood = null;
+  const genreIdByName = new Map();
+
+  const moodButtons = {
+    easy: moodEasyBtn,
+    tense: moodTenseBtn,
+    warm: moodWarmBtn,
+    mindbender: moodMindbenderBtn,
+  };
+
+  const runtimeButtons = Array.from(document.querySelectorAll('.runtime-chip'));
+  const MOOD_PROFILES = {
+    easy: {
+      rating: 6.0,
+      yearFrom: 1990,
+      yearTo: YEAR_MAX,
+      runtimeMin: 80,
+      runtimeMax: 130,
+      genresEn: ['Comedy', 'Family', 'Romance'],
+      genresRu: ['комедия', 'семейный', 'мелодрама'],
+    },
+    tense: {
+      rating: 6.8,
+      yearFrom: 1985,
+      yearTo: YEAR_MAX,
+      runtimeMin: 90,
+      runtimeMax: 145,
+      genresEn: ['Thriller', 'Action', 'Crime'],
+      genresRu: ['триллер', 'боевик', 'криминал'],
+    },
+    warm: {
+      rating: 6.2,
+      yearFrom: 1980,
+      yearTo: YEAR_MAX,
+      runtimeMin: 80,
+      runtimeMax: 125,
+      genresEn: ['Drama', 'Family', 'Adventure'],
+      genresRu: ['драма', 'семейный', 'приключения'],
+    },
+    mindbender: {
+      rating: 7.0,
+      yearFrom: 1970,
+      yearTo: YEAR_MAX,
+      runtimeMin: 95,
+      runtimeMax: 170,
+      genresEn: ['Science Fiction', 'Mystery', 'Drama'],
+      genresRu: ['фантастика', 'детектив', 'драма'],
+    },
+  };
 
   function _criteriaSnapshot() {
     const { from, to } = getYearRange();
     return {
       year_from: from,
       year_to: to,
+      runtime_min: runtimeMin,
+      runtime_max: runtimeMax,
       vote_avg_min: Number.parseFloat(ratingMin.value) || 1,
       genres: Array.from(selectedGenres),
       countries: Array.from(selectedCountries),
@@ -90,10 +148,65 @@ export function createFiltersController({ elements, constants, deps }) {
     return (
       criteria.year_from !== YEAR_MIN
       || criteria.year_to !== YEAR_MAX
+      || criteria.runtime_min !== null
+      || criteria.runtime_max !== null
       || criteria.vote_avg_min > 1.01
       || criteria.genres.length > 0
       || criteria.countries.length > 0
     );
+  }
+
+  function _normalizeGenreName(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function _runtimeKey(minValue, maxValue) {
+    const left = minValue == null ? '' : String(minValue);
+    const right = maxValue == null ? '' : String(maxValue);
+    return `${left}|${right}`;
+  }
+
+  function _clearMoodVisual() {
+    activeMood = null;
+    Object.values(moodButtons).forEach((btn) => {
+      if (btn) btn.classList.remove('is-active');
+    });
+  }
+
+  function _setActiveMoodVisual(moodKey) {
+    _clearMoodVisual();
+    activeMood = moodKey;
+    const btn = moodButtons[moodKey];
+    if (btn) btn.classList.add('is-active');
+  }
+
+  function _updateRuntimeVisual() {
+    const current = _runtimeKey(runtimeMin, runtimeMax);
+    runtimeButtons.forEach((btn) => {
+      const key = _runtimeKey(
+        btn.dataset.min === '' ? null : Number.parseInt(btn.dataset.min, 10),
+        btn.dataset.max === '' ? null : Number.parseInt(btn.dataset.max, 10),
+      );
+      btn.classList.toggle('is-active', key === current);
+    });
+  }
+
+  function _setRuntime(minValue, maxValue) {
+    runtimeMin = Number.isFinite(minValue) ? minValue : null;
+    runtimeMax = Number.isFinite(maxValue) ? maxValue : null;
+    if (runtimeMin !== null && runtimeMax !== null && runtimeMin > runtimeMax) {
+      runtimeMax = runtimeMin;
+    }
+    _updateRuntimeVisual();
+  }
+
+  function _syncGenreVisualState() {
+    const wrap = document.getElementById('genreChips');
+    if (!wrap) return;
+    wrap.querySelectorAll('.chip--genre').forEach((node) => {
+      const id = node.dataset.id;
+      node.classList.toggle('is-active', selectedGenres.has(id));
+    });
   }
 
   function _clearPresetHighlights() {
@@ -242,8 +355,9 @@ export function createFiltersController({ elements, constants, deps }) {
     }, 260);
   }
 
-  function _handleFilterChange({ clearPresets = true } = {}) {
+  function _handleFilterChange({ clearPresets = true, clearMood = true } = {}) {
     if (clearPresets) _clearPresetHighlights();
+    if (clearMood) _clearMoodVisual();
     _recomputePending();
     _saveFilters();
     _schedulePreview();
@@ -260,6 +374,7 @@ export function createFiltersController({ elements, constants, deps }) {
     yrMax.max = String(YEAR_MAX);
     yrMin.value = String(YEAR_MIN);
     yrMax.value = String(YEAR_MAX);
+    _setRuntime(null, null);
   }
 
   function syncYearRange() {
@@ -357,6 +472,12 @@ export function createFiltersController({ elements, constants, deps }) {
 
       const rating = Number.parseFloat(parsed.vote_avg_min);
       ratingMin.value = Number.isFinite(rating) ? String(clamp(rating, 1, 9)) : '1.0';
+      const restoredRuntimeMin = Number.parseInt(String(parsed.runtime_min ?? ''), 10);
+      const restoredRuntimeMax = Number.parseInt(String(parsed.runtime_max ?? ''), 10);
+      _setRuntime(
+        Number.isFinite(restoredRuntimeMin) ? clamp(restoredRuntimeMin, 1, 500) : null,
+        Number.isFinite(restoredRuntimeMax) ? clamp(restoredRuntimeMax, 1, 500) : null,
+      );
 
       selectedCountries.clear();
       if (Array.isArray(parsed.countries)) {
@@ -413,6 +534,7 @@ export function createFiltersController({ elements, constants, deps }) {
     yrMin.value = String(from);
     yrMax.value = String(to);
     ratingMin.value = String(rating);
+    _setRuntime(null, null);
     syncYearRange();
     updateRatingThumb();
 
@@ -568,6 +690,11 @@ export function createFiltersController({ elements, constants, deps }) {
       list = list.filter((g) => RU_ALLOWED_GENRES.has(String(g.name).toLowerCase()));
     }
 
+    genreIdByName.clear();
+    list.forEach((genre) => {
+      genreIdByName.set(_normalizeGenreName(genre.name), String(genre.id));
+    });
+
     const preferred = new Set(genreSelectionSeed.size ? genreSelectionSeed : selectedGenres);
     selectedGenres.clear();
 
@@ -586,6 +713,7 @@ export function createFiltersController({ elements, constants, deps }) {
     selectedGenres.clear();
     selectedCountries.clear();
     genreSelectionSeed = new Set();
+    _clearMoodVisual();
     _recomputePending();
     _saveFilters();
   }
@@ -594,6 +722,7 @@ export function createFiltersController({ elements, constants, deps }) {
     yrMin.value = String(YEAR_MIN);
     yrMax.value = String(YEAR_MAX);
     ratingMin.value = '1.0';
+    _setRuntime(null, null);
     selectedGenres.clear();
     selectedCountries.clear();
     genreSelectionSeed = new Set();
@@ -604,7 +733,7 @@ export function createFiltersController({ elements, constants, deps }) {
 
     loadCountries();
     await loadGenres();
-    _handleFilterChange({ clearPresets: false });
+    _handleFilterChange({ clearPresets: false, clearMood: true });
   }
 
   function handleYearMinInput() {
@@ -624,6 +753,41 @@ export function createFiltersController({ elements, constants, deps }) {
   function handleRatingInput() {
     updateRatingThumb();
     _handleFilterChange();
+  }
+
+  function handleRuntimePreset(minValue, maxValue) {
+    _setRuntime(minValue, maxValue);
+    _handleFilterChange();
+  }
+
+  function getRuntimeRange() {
+    return { min: runtimeMin, max: runtimeMax };
+  }
+
+  function applyMood(moodKey) {
+    const profile = MOOD_PROFILES[moodKey];
+    if (!profile) return;
+
+    const targets = getLang() === 'ru' ? profile.genresRu : profile.genresEn;
+    const moodGenreIds = targets
+      .map((name) => genreIdByName.get(_normalizeGenreName(name)))
+      .filter(Boolean);
+
+    selectedGenres.clear();
+    moodGenreIds.forEach((id) => selectedGenres.add(id));
+    genreSelectionSeed = new Set(selectedGenres);
+    _syncGenreVisualState();
+
+    yrMin.value = String(Math.max(YEAR_MIN, profile.yearFrom));
+    yrMax.value = String(Math.min(YEAR_MAX, profile.yearTo));
+    ratingMin.value = String(profile.rating);
+    _setRuntime(profile.runtimeMin, profile.runtimeMax);
+    syncYearRange();
+    updateRatingThumb();
+
+    _clearPresetHighlights();
+    _setActiveMoodVisual(moodKey);
+    _handleFilterChange({ clearPresets: false, clearMood: false });
   }
 
   function setAutoApply(nextValue) {
@@ -676,7 +840,10 @@ export function createFiltersController({ elements, constants, deps }) {
     const { from, to } = getYearRange();
 
     let changed = false;
-    if (currentRating > 5.2) {
+    if (runtimeMin !== null || runtimeMax !== null) {
+      _setRuntime(null, null);
+      changed = true;
+    } else if (currentRating > 5.2) {
       ratingMin.value = String(Math.max(1, currentRating - 0.8));
       updateRatingThumb();
       changed = true;
@@ -698,7 +865,7 @@ export function createFiltersController({ elements, constants, deps }) {
 
     if (!changed) return;
     _clearPresetHighlights();
-    _handleFilterChange({ clearPresets: false });
+    _handleFilterChange({ clearPresets: false, clearMood: true });
   }
 
   async function requestPreview() {
@@ -707,9 +874,20 @@ export function createFiltersController({ elements, constants, deps }) {
     const criteria = _criteriaSnapshot();
     params.set('year_from', String(criteria.year_from));
     params.set('year_to', String(criteria.year_to));
+    if (criteria.runtime_min != null) params.set('runtime_min', String(criteria.runtime_min));
+    if (criteria.runtime_max != null) params.set('runtime_max', String(criteria.runtime_max));
     params.set('vote_avg_min', String(criteria.vote_avg_min));
     if (criteria.genres.length) params.set('genres', selectedGenresQuery());
     if (criteria.countries.length) params.set('country', selectedCountriesQuery());
+    if (typeof getExclusionsPayload === 'function') {
+      const exclusions = getExclusionsPayload();
+      if (Array.isArray(exclusions?.tmdb) && exclusions.tmdb.length) {
+        params.set('exclude_tmdb', exclusions.tmdb.join('|'));
+      }
+      if (Array.isArray(exclusions?.kp) && exclusions.kp.length) {
+        params.set('exclude_kp', exclusions.kp.join('|'));
+      }
+    }
 
     const isRU = getLang() === 'ru';
     const url = isRU
@@ -797,6 +975,9 @@ export function createFiltersController({ elements, constants, deps }) {
     handleYearMinInput,
     handleYearMaxInput,
     handleRatingInput,
+    handleRuntimePreset,
+    getRuntimeRange,
+    applyMood,
     setAutoApply,
     toggleAutoApply,
     isAutoApplyEnabled,

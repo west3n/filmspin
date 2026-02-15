@@ -1,4 +1,4 @@
-import { I18N, langMap } from './modules/i18n.js?v=29';
+import { I18N, langMap } from './modules/i18n.js?v=30';
 import { getJson } from './modules/http.js?v=22';
 import {
   FILTERS_STORAGE_KEY,
@@ -10,8 +10,8 @@ import {
 import { clamp, toYear, valueToColor } from './modules/app/helpers.js?v=1';
 import { createStatusController } from './modules/app/status.js?v=1';
 import { createSpinButtonController } from './modules/app/spin_button.js?v=1';
-import { createFiltersController } from './modules/app/filters.js?v=3';
-import { createCardController } from './modules/app/card.js?v=1';
+import { createFiltersController } from './modules/app/filters.js?v=4';
+import { createCardController } from './modules/app/card.js?v=2';
 
 const ratingMin = document.getElementById('ratingMin');
 const ratingVal = document.getElementById('ratingVal');
@@ -38,14 +38,26 @@ const filtersResetBtn = document.getElementById('filtersReset');
 const presetPopularBtn = document.getElementById('presetPopular');
 const presetTopBtn = document.getElementById('presetTop');
 const presetRecentBtn = document.getElementById('presetRecent');
+const moodLabelEl = document.getElementById('moodLabel');
+const moodEasyBtn = document.getElementById('moodEasy');
+const moodTenseBtn = document.getElementById('moodTense');
+const moodWarmBtn = document.getElementById('moodWarm');
+const moodMindbenderBtn = document.getElementById('moodMindbender');
 const advancedToggle = document.getElementById('advancedToggle');
 const advancedBody = document.getElementById('advancedBody');
 const autoApplyToggle = document.getElementById('autoApplyToggle');
 const applyFiltersBtn = document.getElementById('applyFilters');
 const filtersPendingEl = document.getElementById('filtersPending');
 const relaxFiltersBtn = document.getElementById('relaxFilters');
+const runtimeLabelEl = document.getElementById('runtimeLabel');
+const runtimeAnyBtn = document.getElementById('runtimeAny');
+const runtimeShortBtn = document.getElementById('runtimeShort');
+const runtimeStandardBtn = document.getElementById('runtimeStandard');
+const runtimeLongBtn = document.getElementById('runtimeLong');
 
 const publicConfig = { ru_enabled: true };
+const EXCLUDED_TMDB_KEY = 'fs_excluded_tmdb_v1';
+const EXCLUDED_KP_KEY = 'fs_excluded_kp_v1';
 
 function isRuEnabled() {
   return publicConfig.ru_enabled !== false;
@@ -66,6 +78,53 @@ function t(key) {
   return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
 }
 
+function readIdSet(storageKey) {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(
+      parsed
+        .map((value) => Number.parseInt(String(value), 10))
+        .filter((value) => Number.isFinite(value)),
+    );
+  } catch (_) {
+    return new Set();
+  }
+}
+
+function writeIdSet(storageKey, setValue) {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(Array.from(setValue).slice(-500)));
+  } catch (_) {}
+}
+
+const excludedTmdbIds = readIdSet(EXCLUDED_TMDB_KEY);
+const excludedKpIds = readIdSet(EXCLUDED_KP_KEY);
+
+function getExclusionsPayload() {
+  return {
+    tmdb: Array.from(excludedTmdbIds).slice(-150),
+    kp: Array.from(excludedKpIds).slice(-150),
+  };
+}
+
+function markMovieExcluded(moviePayload, { watched = false } = {}) {
+  const tmdbId = Number.parseInt(String(moviePayload?.tmdb_id ?? ''), 10);
+  const kpId = Number.parseInt(String(moviePayload?.kp_id ?? ''), 10);
+  if (Number.isFinite(tmdbId)) excludedTmdbIds.add(tmdbId);
+  if (Number.isFinite(kpId)) excludedKpIds.add(kpId);
+  writeIdSet(EXCLUDED_TMDB_KEY, excludedTmdbIds);
+  writeIdSet(EXCLUDED_KP_KEY, excludedKpIds);
+  statusController.showStatus(
+    'success',
+    watched ? t('status_marked_watched') : t('status_hidden_movie'),
+    { autoclear: true },
+  );
+  void filtersController.requestPreview();
+}
+
 const statusController = createStatusController({ sloganEl, statusEl, t });
 const spinButtonController = createSpinButtonController({ spinBtn, t });
 const filtersController = createFiltersController({
@@ -84,6 +143,10 @@ const filtersController = createFiltersController({
     presetPopularBtn,
     presetTopBtn,
     presetRecentBtn,
+    moodEasyBtn,
+    moodTenseBtn,
+    moodWarmBtn,
+    moodMindbenderBtn,
     advancedBody,
     advancedToggle,
     autoApplyToggle,
@@ -104,6 +167,7 @@ const filtersController = createFiltersController({
     langMap,
     t,
     getJson,
+    getExclusionsPayload,
     showStatus: statusController.showStatus,
     clamp,
     toYear,
@@ -113,6 +177,15 @@ const filtersController = createFiltersController({
 const cardController = createCardController({
   elements: { resultEl },
   deps: { getLang, t, getJson, langMap },
+});
+
+cardController.setActionHandlers({
+  watched: (payload) => {
+    markMovieExcluded(payload, { watched: true });
+  },
+  hide: (payload) => {
+    markMovieExcluded(payload, { watched: false });
+  },
 });
 
 filtersController.initDefaults();
@@ -141,6 +214,9 @@ async function spin() {
     const { from, to } = filtersController.getYearRange();
     params.set('year_from', String(from));
     params.set('year_to', String(to));
+    const runtime = filtersController.getRuntimeRange();
+    if (runtime.min != null) params.set('runtime_min', String(runtime.min));
+    if (runtime.max != null) params.set('runtime_max', String(runtime.max));
 
     const genres = filtersController.selectedGenresQuery();
     const countries = filtersController.selectedCountriesQuery();
@@ -148,6 +224,9 @@ async function spin() {
     if (genres) params.set('genres', genres);
     if (countries) params.set('country', countries);
     params.set('vote_avg_min', ratingMin.value);
+    const exclusions = getExclusionsPayload();
+    if (exclusions.tmdb.length) params.set('exclude_tmdb', exclusions.tmdb.join('|'));
+    if (exclusions.kp.length) params.set('exclude_kp', exclusions.kp.join('|'));
 
     const isRU = getLang() === 'ru';
     const url = isRU
@@ -200,6 +279,16 @@ function applyStaticTranslations() {
   document.getElementById('directorLabel').textContent = `${t('people_director')}:`;
   document.getElementById('castLabel').textContent = `${t('people_cast')}:`;
   document.getElementById('minRatingLabel').textContent = t('min_rating');
+  moodLabelEl.textContent = t('mood_label');
+  moodEasyBtn.textContent = t('mood_easy');
+  moodTenseBtn.textContent = t('mood_tense');
+  moodWarmBtn.textContent = t('mood_warm');
+  moodMindbenderBtn.textContent = t('mood_mindbender');
+  runtimeLabelEl.textContent = t('runtime_label');
+  runtimeAnyBtn.textContent = t('runtime_any');
+  runtimeShortBtn.textContent = t('runtime_short');
+  runtimeStandardBtn.textContent = t('runtime_standard');
+  runtimeLongBtn.textContent = t('runtime_long');
   document.getElementById('countriesHint').textContent = t('multi_select_hint');
   document.getElementById('genresHint').textContent = t('multi_select_hint');
 
@@ -266,6 +355,17 @@ function attachEventHandlers() {
   presetPopularBtn.addEventListener('click', () => filtersController.applyPreset('popular'));
   presetTopBtn.addEventListener('click', () => filtersController.applyPreset('top'));
   presetRecentBtn.addEventListener('click', () => filtersController.applyPreset('recent'));
+  moodEasyBtn.addEventListener('click', () => filtersController.applyMood('easy'));
+  moodTenseBtn.addEventListener('click', () => filtersController.applyMood('tense'));
+  moodWarmBtn.addEventListener('click', () => filtersController.applyMood('warm'));
+  moodMindbenderBtn.addEventListener('click', () => filtersController.applyMood('mindbender'));
+  [runtimeAnyBtn, runtimeShortBtn, runtimeStandardBtn, runtimeLongBtn].forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const min = btn.dataset.min === '' ? null : Number.parseInt(btn.dataset.min, 10);
+      const max = btn.dataset.max === '' ? null : Number.parseInt(btn.dataset.max, 10);
+      filtersController.handleRuntimePreset(min, max);
+    });
+  });
   autoApplyToggle.addEventListener('click', () => filtersController.toggleAutoApply());
   applyFiltersBtn.addEventListener('click', () => { void filtersController.applyNow(); });
   relaxFiltersBtn.addEventListener('click', () => filtersController.relaxFilters());

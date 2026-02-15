@@ -97,6 +97,12 @@
     font-size: 11px;
   }
 
+  .reason-row {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+
   .people-block {
     margin-top: 6px;
     gap: 3px;
@@ -125,6 +131,20 @@
     margin-top: 8px;
     font-size: 0.86rem;
     line-height: 1.4;
+  }
+
+  .watch-row {
+    margin-top: 8px;
+    font-size: 0.82rem;
+  }
+
+  .card-actions {
+    margin-top: 10px;
+    gap: 6px;
+  }
+
+  .card-action-btn {
+    font-size: 11px;
   }
 
   .apply-controls {
@@ -178,12 +198,20 @@
     text-align: center;
   }
 
+  .mood-row .mood-btn {
+    flex: 1 1 calc(50% - 8px);
+  }
+
   .pending-pill {
     width: 100%;
     text-align: center;
   }
 
   #relaxFilters {
+    width: 100%;
+  }
+
+  .card-action-btn {
     width: 100%;
   }
 }
