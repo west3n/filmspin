@@ -36,6 +36,7 @@ let genreSelectionSeed = new Set();
 let currentMovie = null;
 let statusTimer = null;
 let sloganSwapTimer = null;
+let spinMorphTimer = null;
 let savedFiltersOpen = false;
 
 const RU_ALLOWED_GENRES = new Set([
@@ -260,15 +261,62 @@ function hideResultCard() {
   if (cardEl) cardEl.classList.remove('animate-in');
 }
 
+function ensureSpinMarkup() {
+  let dice = spinBtn.querySelector('.dice');
+  let label = spinBtn.querySelector('.label');
+  let img = dice ? dice.querySelector('img') : null;
+
+  if (!dice || !label || !img) {
+    spinBtn.innerHTML = `<span class="dice"><img src="/img/endurance.png" alt="Endurance" /></span><span class="label">${t('btn_spin')}</span><span class="shine" aria-hidden="true"></span>`;
+    dice = spinBtn.querySelector('.dice');
+    label = spinBtn.querySelector('.label');
+    img = dice ? dice.querySelector('img') : null;
+  }
+
+  return { dice, label, img };
+}
+
+function syncSpinLabel() {
+  const { label, img } = ensureSpinMarkup();
+  if (label) label.textContent = t('btn_spin');
+  if (img) img.alt = 'Endurance';
+}
+
+function getCurrentSpinAngle(diceEl) {
+  if (!diceEl) return null;
+  const transform = window.getComputedStyle(diceEl).transform;
+  if (!transform || transform === 'none') return null;
+
+  try {
+    const matrix = new DOMMatrixReadOnly(transform);
+    const angle = Math.atan2(matrix.b, matrix.a) * (180 / Math.PI);
+    return ((angle % 360) + 360) % 360;
+  } catch (_) {
+    return null;
+  }
+}
+
 function setSpinLoading(isLoading) {
+  const { dice } = ensureSpinMarkup();
+  const savedAngle = Number.parseFloat(spinBtn.dataset.spinAngle || '0');
+  if (dice && Number.isFinite(savedAngle)) {
+    dice.style.setProperty('--spin-angle', `${savedAngle.toFixed(2)}deg`);
+  }
+  if (spinMorphTimer) {
+    clearTimeout(spinMorphTimer);
+    spinMorphTimer = null;
+  }
+
   if (isLoading) {
+    spinBtn.classList.remove('is-unwinding');
     spinBtn.classList.remove('btn-press');
     void spinBtn.offsetWidth;
     spinBtn.classList.add('btn-press');
     spinBtn.classList.add('reel-mode', 'is-loading');
-    spinBtn.innerHTML = `<span class="dice"><img src="/img/endurance.png" alt="Endurance" /></span><span class="label">${t('btn_spin')}</span>`;
-    const dice = spinBtn.querySelector('.dice');
+
     if (dice) {
+      const prevDir = spinBtn.dataset.spinDir;
+      if (prevDir) dice.classList.remove(prevDir);
       const dir = Math.random() < 0.5 ? 'spin-left' : 'spin-right';
       dice.classList.add(dir);
       spinBtn.dataset.spinDir = dir;
@@ -278,17 +326,26 @@ function setSpinLoading(isLoading) {
 
   const dir = spinBtn.dataset.spinDir;
   if (dir) {
-    const dice = spinBtn.querySelector('.dice');
+    const angle = getCurrentSpinAngle(dice);
+    if (Number.isFinite(angle)) {
+      spinBtn.dataset.spinAngle = angle.toFixed(2);
+      if (dice) dice.style.setProperty('--spin-angle', `${angle.toFixed(2)}deg`);
+    }
     if (dice) dice.classList.remove(dir);
     delete spinBtn.dataset.spinDir;
   }
 
   spinBtn.classList.remove('btn-press');
   spinBtn.classList.remove('is-loading');
-  setTimeout(() => {
+  spinBtn.classList.add('is-unwinding');
+  requestAnimationFrame(() => {
     spinBtn.classList.remove('reel-mode');
-    spinBtn.innerHTML = `<span class="dice"><img src="/img/endurance.png" alt="Endurance" /></span><span class="label">${t('btn_spin')}</span>`;
-  }, 100);
+  });
+  spinMorphTimer = setTimeout(() => {
+    spinBtn.classList.remove('is-unwinding');
+    spinMorphTimer = null;
+  }, 620);
+  syncSpinLabel();
 }
 
 function normalizeErrorMessage(message) {
@@ -711,13 +768,7 @@ function applyStaticTranslations() {
   presetTopBtn.textContent = t('preset_top');
   presetRecentBtn.textContent = t('preset_recent');
   retryBtn.textContent = t('retry');
-
-  if (spinBtn.classList.contains('is-loading')) {
-    const label = spinBtn.querySelector('.label');
-    if (label) label.textContent = t('btn_spin');
-  } else {
-    spinBtn.innerHTML = `<span class="dice"><img src="/img/endurance.png" alt="Endurance" /></span><span class="label">${t('btn_spin')}</span>`;
-  }
+  syncSpinLabel();
 
   const footerData = document.getElementById('footerData');
   if (footerData) footerData.textContent = t('data_source');
