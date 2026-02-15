@@ -1018,11 +1018,86 @@ body {
     width: 100%;
   }
 
-  #overview {
+  .result-card,
+  .skeleton-card {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px !important;
+  }
+
+  .poster,
+  .skeleton-media {
+    width: 34%;
+    min-width: 108px;
+    max-width: 132px;
+    aspect-ratio: 2 / 3;
+    height: auto;
+    border-radius: 11px;
+    align-self: flex-start;
+  }
+
+  .skeleton-media {
+    height: auto;
+  }
+
+  .skeleton-content {
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .skeleton-line {
+    height: 12px;
+    border-radius: 6px;
+  }
+
+  .movie-title {
+    font-size: clamp(1.1rem, 4.8vw, 1.35rem);
+    line-height: 1.2;
+  }
+
+  .movie-meta {
+    margin-top: 4px;
+    font-size: 11px;
+  }
+
+  .movie-overview {
+    margin-top: 8px;
+    font-size: 0.93rem;
+    line-height: 1.45;
     -webkit-line-clamp: 6;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  .ratings-row {
+    margin-top: 8px;
+    font-size: 0.86rem;
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 420px) {
+  .result-card,
+  .skeleton-card {
+    gap: 10px;
+    padding: 12px !important;
+  }
+
+  .poster,
+  .skeleton-media {
+    min-width: 96px;
+    max-width: 112px;
+  }
+
+  .movie-title {
+    font-size: 1.02rem;
+  }
+
+  .movie-overview {
+    font-size: 0.89rem;
+    -webkit-line-clamp: 5;
   }
 }
 
