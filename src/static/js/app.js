@@ -17,6 +17,7 @@ const yrMaxBadge = document.getElementById('yrMaxBadge');
 const spinBtn = document.getElementById('spin');
 const retryBtn = document.getElementById('retrySpin');
 const statusEl = document.getElementById('requestStatus');
+const sloganEl = document.getElementById('slogan');
 const resultEl = document.getElementById('result');
 const resultSkeletonEl = document.getElementById('resultSkeleton');
 
@@ -34,6 +35,7 @@ const selectedCountries = new Set();
 let genreSelectionSeed = new Set();
 let currentMovie = null;
 let statusTimer = null;
+let sloganSwapTimer = null;
 let savedFiltersOpen = false;
 
 const RU_ALLOWED_GENRES = new Set([
@@ -175,31 +177,75 @@ function selectedCountriesQuery() {
   return Array.from(selectedCountries).join(',');
 }
 
+function clearSloganSwapTimer() {
+  if (!sloganSwapTimer) return;
+  clearTimeout(sloganSwapTimer);
+  sloganSwapTimer = null;
+}
+
+function setSloganTone(tone) {
+  if (!sloganEl) return;
+  sloganEl.classList.remove('is-idle', 'is-info', 'is-success', 'is-error');
+  sloganEl.classList.add(`is-${tone}`);
+}
+
+function swapSloganText(text, tone, { animate = true } = {}) {
+  if (!sloganEl) return;
+  clearSloganSwapTimer();
+  setSloganTone(tone);
+
+  if (!animate) {
+    sloganEl.classList.remove('is-swap-out', 'is-swap-in');
+    sloganEl.textContent = text;
+    return;
+  }
+
+  sloganEl.classList.remove('is-swap-in');
+  sloganEl.classList.add('is-swap-out');
+
+  sloganSwapTimer = setTimeout(() => {
+    sloganEl.textContent = text;
+    sloganEl.classList.remove('is-swap-out');
+    sloganEl.classList.add('is-swap-in');
+    sloganSwapTimer = setTimeout(() => {
+      sloganEl.classList.remove('is-swap-in');
+      sloganSwapTimer = null;
+    }, 260);
+  }, 110);
+}
+
+function setSloganIdle({ animate = true } = {}) {
+  swapSloganText(t('slogan'), 'idle', { animate });
+}
+
 function showStatus(kind, text, { autoclear = false } = {}) {
-  if (!statusEl) return;
   if (statusTimer) {
     clearTimeout(statusTimer);
     statusTimer = null;
   }
 
-  statusEl.classList.remove('hidden', 'status-info', 'status-success', 'status-error');
-  statusEl.classList.add(`status-${kind}`);
-  statusEl.textContent = text;
+  const tone = kind === 'success' ? 'success' : (kind === 'error' ? 'error' : 'info');
+  swapSloganText(text, tone);
+
+  if (statusEl) {
+    statusEl.textContent = text;
+    statusEl.classList.add('hidden');
+  }
 
   if (autoclear) {
     statusTimer = setTimeout(() => {
-      statusEl.classList.add('hidden');
+      hideStatus();
     }, 2600);
   }
 }
 
 function hideStatus() {
-  if (!statusEl) return;
   if (statusTimer) {
     clearTimeout(statusTimer);
     statusTimer = null;
   }
-  statusEl.classList.add('hidden');
+  setSloganIdle();
+  if (statusEl) statusEl.classList.add('hidden');
 }
 
 function showSkeleton(show) {
@@ -215,11 +261,10 @@ function hideResultCard() {
 }
 
 function setSpinLoading(isLoading) {
-  spinBtn.classList.remove('btn-press');
-  void spinBtn.offsetWidth;
-  spinBtn.classList.add('btn-press');
-
   if (isLoading) {
+    spinBtn.classList.remove('btn-press');
+    void spinBtn.offsetWidth;
+    spinBtn.classList.add('btn-press');
     spinBtn.classList.add('reel-mode', 'is-loading');
     spinBtn.innerHTML = `<span class="dice"><img src="/img/endurance.png" alt="Endurance" /></span><span class="label">${t('btn_spin')}</span>`;
     const dice = spinBtn.querySelector('.dice');
@@ -238,6 +283,7 @@ function setSpinLoading(isLoading) {
     delete spinBtn.dataset.spinDir;
   }
 
+  spinBtn.classList.remove('btn-press');
   spinBtn.classList.remove('is-loading');
   setTimeout(() => {
     spinBtn.classList.remove('reel-mode');
@@ -434,7 +480,7 @@ async function loadGenres() {
     raw = data;
   } catch (error) {
     console.error('Failed to load genres:', error);
-    showStatus('error', t('status_genres_failed'));
+    showStatus('error', t('status_genres_failed'), { autoclear: true });
     raw = [];
   }
 
@@ -611,7 +657,7 @@ async function spin() {
     const { ok, data } = await getJson(url);
     if (!ok || data?.error) {
       const message = normalizeErrorMessage(data?.error || t('status_error_generic'));
-      showStatus('error', message);
+      showStatus('error', message, { autoclear: true });
       retryBtn.classList.remove('hidden');
       return;
     }
@@ -626,7 +672,7 @@ async function spin() {
     showStatus('success', t('status_ready'), { autoclear: true });
   } catch (error) {
     console.error(error);
-    showStatus('error', t('status_error_generic'));
+    showStatus('error', t('status_error_generic'), { autoclear: true });
     retryBtn.classList.remove('hidden');
   } finally {
     setSpinLoading(false);
@@ -648,7 +694,7 @@ function applyLanguageAvailability() {
 }
 
 function applyStaticTranslations() {
-  document.getElementById('slogan').textContent = t('slogan');
+  setSloganIdle({ animate: false });
   document.getElementById('filtersTitle').textContent = t('filters');
   document.getElementById('yearRangeLabel').textContent = t('year_range');
   document.getElementById('countriesLabel').textContent = t('countries');
@@ -780,6 +826,7 @@ function attachEventHandlers() {
 async function initApp() {
   await loadPublicConfig();
   applyLanguageAvailability();
+  if (statusEl) statusEl.classList.add('hidden');
 
   const curLang = getLang();
   langSelect.value = curLang;
