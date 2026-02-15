@@ -1,0 +1,174 @@
+@media (min-width: 640px) {
+  .result-card,
+  .skeleton-card {
+    flex-direction: row;
+  }
+
+  .poster {
+    width: 28%;
+    min-width: 220px;
+    align-self: flex-start;
+  }
+
+  .terms-shell {
+    padding: 28px 18px 46px;
+  }
+
+  .terms-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .terms-contact {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .status-message {
+    top: 84px;
+  }
+
+  .status-actions {
+    top: 136px;
+  }
+
+  .cta-wrap {
+    position: sticky;
+    bottom: 10px;
+    z-index: 40;
+  }
+
+  .cta-inner {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+  }
+
+  #spin {
+    width: 100%;
+  }
+
+  .result-card,
+  .skeleton-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px !important;
+  }
+
+  .result-card > .flex-1 {
+    width: 100%;
+  }
+
+  .poster,
+  .skeleton-media {
+    width: min(42vw, 180px);
+    min-width: 0;
+    max-width: 180px;
+    aspect-ratio: 2 / 3;
+    height: auto;
+    border-radius: 11px;
+    align-self: center;
+  }
+
+  .skeleton-media {
+    height: auto;
+  }
+
+  .skeleton-content {
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .skeleton-line {
+    height: 12px;
+    border-radius: 6px;
+  }
+
+  .movie-title {
+    font-size: clamp(1.1rem, 4.8vw, 1.35rem);
+    line-height: 1.2;
+  }
+
+  .movie-meta {
+    margin-top: 4px;
+    font-size: 11px;
+  }
+
+  .people-block {
+    margin-top: 6px;
+    gap: 3px;
+  }
+
+  .people-row {
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .people-label {
+    margin-right: 5px;
+  }
+
+  .movie-overview {
+    margin-top: 10px;
+    font-size: 0.93rem;
+    line-height: 1.45;
+    -webkit-line-clamp: 6;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .ratings-row {
+    margin-top: 8px;
+    font-size: 0.86rem;
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 420px) {
+  .result-card,
+  .skeleton-card {
+    gap: 9px;
+    padding: 12px !important;
+  }
+
+  .poster,
+  .skeleton-media {
+    width: min(48vw, 150px);
+    max-width: 150px;
+  }
+
+  .movie-title {
+    font-size: 1.02rem;
+  }
+
+  .movie-overview {
+    font-size: 0.89rem;
+    -webkit-line-clamp: 5;
+  }
+
+  .people-row {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 600px) {
+  #yrMinBadge {
+    top: -5px;
+  }
+
+  #yrMaxBadge {
+    top: 45px;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

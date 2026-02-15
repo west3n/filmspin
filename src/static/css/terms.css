@@ -1,0 +1,126 @@
+.terms-page {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.terms-shell {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 24px 16px 42px;
+}
+
+.terms-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.terms-back {
+  text-decoration: none;
+  color: #c5d9fd;
+  border: 1px solid rgba(110, 157, 255, 0.3);
+  border-radius: 9999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  transition: border-color 160ms ease, background 160ms ease;
+  background: rgba(7, 14, 30, 0.7);
+}
+
+.terms-back:hover {
+  border-color: rgba(110, 157, 255, 0.82);
+  background: rgba(11, 21, 42, 0.82);
+}
+
+.terms-hero {
+  padding: 20px 18px;
+  border: 1px solid rgba(110, 157, 255, 0.3);
+  border-radius: 18px;
+  margin-bottom: 14px;
+}
+
+.terms-kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #a8c7ff;
+}
+
+.terms-title {
+  margin: 0;
+  font-family: 'Manrope', 'Space Grotesk', sans-serif;
+  letter-spacing: 0.01em;
+  font-weight: 800;
+  line-height: 1.02;
+  font-size: clamp(2.05rem, 6.2vw, 3.4rem);
+  color: #fff7f2;
+}
+
+.terms-subtitle {
+  margin: 12px 0 0;
+  color: #c2d7fd;
+  line-height: 1.6;
+}
+
+.terms-updated {
+  margin: 10px 0 0;
+  color: #93abd4;
+  font-size: 13px;
+}
+
+.terms-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.terms-card {
+  padding: 16px 14px;
+  border: 1px solid rgba(110, 157, 255, 0.2);
+  border-radius: 16px;
+}
+
+.terms-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+  color: #e8f2ff;
+}
+
+.terms-card p {
+  margin: 0;
+  color: #c1d6fc;
+  line-height: 1.58;
+  font-size: 0.96rem;
+}
+
+.terms-contact {
+  margin-top: 12px;
+  padding: 16px 14px;
+  border: 1px solid rgba(110, 157, 255, 0.2);
+  border-radius: 16px;
+}
+
+.terms-contact h2 {
+  margin: 0 0 8px;
+  font-size: 1.02rem;
+  color: #e8f2ff;
+}
+
+.terms-contact p {
+  margin: 0;
+  color: #c1d6fc;
+  line-height: 1.58;
+}
+
+.terms-contact a {
+  color: #9ec3ff;
+}
+
+.terms-footer {
+  margin-top: 16px;
+  text-align: center;
+  color: #879fca;
+  font-size: 12px;
+}
