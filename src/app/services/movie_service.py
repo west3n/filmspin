@@ -33,7 +33,9 @@ class MovieResolverService:
         tmdb_id: Optional[int] = None,
         kp_id: Optional[int] = None,
         imdb_id: Optional[str] = None,
+        watch_region: Optional[str] = None,
     ) -> MovieCard:
+        region = self._normalize_watch_region(watch_region, lang=lang)
         if not tmdb_id and kp_id:
             mapping = await self.mappings.get_by_kp(kp_id)
             tmdb_id = mapping.get("tmdb_id")
@@ -45,15 +47,24 @@ class MovieResolverService:
                 await self.mappings.set_map(tmdb_id, kp_id, imdb_id)
 
         if tmdb_id:
-            norm_key = f"norm:movie:{CACHE_SCHEMA_VERSION}:{tmdb_id}:{lang}"
+            norm_key = f"norm:movie:{CACHE_SCHEMA_VERSION}:{tmdb_id}:{lang}:{region}"
             hit, cached = await self.cache.get_json_hit(norm_key)
             if hit and isinstance(cached, dict):
                 return MovieCard.model_validate(cached)
 
         if lang.startswith("ru"):
-            return await self._resolve_ru(tmdb_id=tmdb_id, kp_id=kp_id, imdb_id=imdb_id)
+            return await self._resolve_ru(
+                tmdb_id=tmdb_id,
+                kp_id=kp_id,
+                imdb_id=imdb_id,
+                watch_region=region,
+            )
         return await self._resolve_default(
-            lang=lang, tmdb_id=tmdb_id, kp_id=kp_id, imdb_id=imdb_id
+            lang=lang,
+            tmdb_id=tmdb_id,
+            kp_id=kp_id,
+            imdb_id=imdb_id,
+            watch_region=region,
         )
 
     async def _resolve_ru(
@@ -62,6 +73,7 @@ class MovieResolverService:
         tmdb_id: Optional[int],
         kp_id: Optional[int],
         imdb_id: Optional[str],
+        watch_region: str,
     ) -> MovieCard:
         if not kp_id:
             if tmdb_id:
@@ -84,11 +96,24 @@ class MovieResolverService:
             imdb_id = imdb_id or (tmdb_raw.get("external_ids") or {}).get("imdb_id")
             await self.mappings.set_map(tmdb_id, None, imdb_id)
             imdb_extra = await self._get_omdb_rating(imdb_id)
-            card = self._normalize_tmdb(tmdb_raw, imdb_extra)
+            watch_payload = await self._get_tmdb_watch_providers(tmdb_id)
+            watch_providers, watch_url = self._extract_watch_data(watch_payload, watch_region)
+            card = self._normalize_tmdb(
+                tmdb_raw,
+                imdb_extra,
+                watch_providers=watch_providers,
+                watch_url=watch_url,
+            )
+
+        if tmdb_id:
+            watch_payload = await self._get_tmdb_watch_providers(tmdb_id)
+            watch_providers, watch_url = self._extract_watch_data(watch_payload, watch_region)
+            card.watch_providers = watch_providers
+            card.watch_url = watch_url
 
         if tmdb_id:
             await self.cache.set_json(
-                f"norm:movie:{CACHE_SCHEMA_VERSION}:{tmdb_id}:ru-RU",
+                f"norm:movie:{CACHE_SCHEMA_VERSION}:{tmdb_id}:ru-RU:{watch_region}",
                 card.model_dump(),
                 TTL_MOVIE_DETAIL,
             )
@@ -101,6 +126,7 @@ class MovieResolverService:
         tmdb_id: Optional[int],
         kp_id: Optional[int],
         imdb_id: Optional[str],
+        watch_region: str,
     ) -> MovieCard:
         if not tmdb_id and kp_id:
             mapping = await self.mappings.get_by_kp(kp_id)
@@ -124,9 +150,16 @@ class MovieResolverService:
         imdb_id = imdb_id or (tmdb_raw.get("external_ids") or {}).get("imdb_id")
         await self.mappings.set_map(tmdb_id, kp_id, imdb_id)
         imdb_extra = await self._get_omdb_rating(imdb_id)
-        card = self._normalize_tmdb(tmdb_raw, imdb_extra)
+        watch_payload = await self._get_tmdb_watch_providers(tmdb_id)
+        watch_providers, watch_url = self._extract_watch_data(watch_payload, watch_region)
+        card = self._normalize_tmdb(
+            tmdb_raw,
+            imdb_extra,
+            watch_providers=watch_providers,
+            watch_url=watch_url,
+        )
         await self.cache.set_json(
-            f"norm:movie:{CACHE_SCHEMA_VERSION}:{tmdb_id}:{lang}",
+            f"norm:movie:{CACHE_SCHEMA_VERSION}:{tmdb_id}:{lang}:{watch_region}",
             card.model_dump(),
             TTL_MOVIE_DETAIL,
         )
@@ -150,6 +183,15 @@ class MovieResolverService:
         if hit and isinstance(cached, dict):
             return cached
         payload = await self.poiskkino.get(f"/v1.4/movie/{kp_id}")
+        await self.cache.set_json(key, payload, TTL_MOVIE_DETAIL)
+        return payload
+
+    async def _get_tmdb_watch_providers(self, tmdb_id: int) -> dict[str, Any]:
+        key = f"raw:tmdb:watch:{tmdb_id}"
+        hit, cached = await self.cache.get_json_hit(key)
+        if hit and isinstance(cached, dict):
+            return cached
+        payload = await self.tmdb.get(f"/movie/{tmdb_id}/watch/providers")
         await self.cache.set_json(key, payload, TTL_MOVIE_DETAIL)
         return payload
 
@@ -194,7 +236,13 @@ class MovieResolverService:
         return data
 
     @staticmethod
-    def _normalize_tmdb(details: dict[str, Any], imdb_extra: Optional[dict[str, Any]]) -> MovieCard:
+    def _normalize_tmdb(
+        details: dict[str, Any],
+        imdb_extra: Optional[dict[str, Any]],
+        *,
+        watch_providers: list[str],
+        watch_url: Optional[str],
+    ) -> MovieCard:
         imdb_id = (details.get("external_ids") or {}).get("imdb_id")
         prod = details.get("production_countries") or []
         directors = MovieResolverService._extract_tmdb_directors(details)
@@ -217,6 +265,7 @@ class MovieResolverService:
         return MovieCard(
             title=details.get("title") or "",
             year=(details.get("release_date") or "")[:4] or None,
+            runtime_minutes=MovieResolverService._safe_int(details.get("runtime")),
             overview=details.get("overview") or "",
             genres=[
                 g.get("name")
@@ -226,6 +275,8 @@ class MovieResolverService:
             countries=[str(c) for c in countries if c],
             directors=directors,
             cast=cast,
+            watch_providers=watch_providers,
+            watch_url=watch_url,
             poster=poster,
             backdrop=backdrop,
             tmdb_id=details.get("id"),
@@ -253,6 +304,7 @@ class MovieResolverService:
         return MovieCard(
             title=movie.get("name") or movie.get("alternativeName") or movie.get("enName") or "",
             year=movie.get("year"),
+            runtime_minutes=MovieResolverService._safe_int(movie.get("movieLength")),
             overview=movie.get("description") or movie.get("shortDescription") or "",
             genres=[
                 g.get("name")
@@ -280,6 +332,43 @@ class MovieResolverService:
             kp_url=f"https://www.kinopoisk.ru/film/{kp_id}/" if kp_id else None,
             tmdb_url=None,
         )
+
+    @staticmethod
+    def _normalize_watch_region(watch_region: Optional[str], *, lang: str) -> str:
+        candidate = str(watch_region or "").strip().upper()
+        if len(candidate) == 2 and candidate.isalpha():
+            return candidate
+        return "RU" if lang.startswith("ru") else "US"
+
+    @staticmethod
+    def _extract_watch_data(payload: dict[str, Any], region: str) -> tuple[list[str], Optional[str]]:
+        results = payload.get("results")
+        if not isinstance(results, dict):
+            return [], None
+        region_payload = results.get(region)
+        if not isinstance(region_payload, dict):
+            return [], None
+        names: list[str] = []
+        for key in ("flatrate", "ads", "rent", "buy"):
+            values = region_payload.get(key)
+            if not isinstance(values, list):
+                continue
+            for row in values:
+                if not isinstance(row, dict):
+                    continue
+                name = row.get("provider_name")
+                if name:
+                    names.append(str(name))
+        deduped = MovieResolverService._dedupe_names(names, limit=5)
+        link = region_payload.get("link")
+        return deduped, str(link) if link else None
+
+    @staticmethod
+    def _safe_int(value: Any) -> Optional[int]:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
 
     @staticmethod
     def _dedupe_names(values: list[str], *, limit: int) -> list[str]:

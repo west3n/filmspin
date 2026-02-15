@@ -13,20 +13,28 @@ router = APIRouter(prefix="/api", tags=["random"])
 async def random_movie(
     year_from: Optional[int] = Query(None, ge=1900, le=2100),
     year_to: Optional[int] = Query(None, ge=1900, le=2100),
+    runtime_min: Optional[int] = Query(None, ge=1, le=500),
+    runtime_max: Optional[int] = Query(None, ge=1, le=500),
     genres: Optional[str] = Query(
         None, description="TMDb genre ids, comma or | separated"
     ),
     vote_avg_min: float = Query(1.0, ge=0.0, le=10.0, description="IMDb rating 0..10"),
     country: Optional[str] = Query(None, description="ISO 3166-1 code (e.g. US, GB)"),
+    exclude_tmdb: Optional[str] = Query(None, description="TMDb ids to exclude, comma or | separated"),
+    exclude_kp: Optional[str] = Query(None, description="KP ids to exclude, comma or | separated"),
     lang: str = Query("en-US", description="TMDb language code, e.g. en-US or ru-RU"),
     service: RandomService = Depends(get_random_service),
 ):
     return await service.random_en(
         year_from=year_from,
         year_to=year_to,
+        runtime_min=runtime_min,
+        runtime_max=runtime_max,
         genres=genres,
         vote_avg_min=vote_avg_min,
         country=country,
+        exclude_tmdb=exclude_tmdb,
+        exclude_kp=exclude_kp,
         lang=lang,
     )
 
@@ -35,6 +43,8 @@ async def random_movie(
 async def random_movie_ru(
     year_from: Optional[int] = Query(None, ge=1900, le=2100),
     year_to: Optional[int] = Query(None, ge=1900, le=2100),
+    runtime_min: Optional[int] = Query(None, ge=1, le=500),
+    runtime_max: Optional[int] = Query(None, ge=1, le=500),
     genres: Optional[str] = Query(
         None, description="жанры (slug’и) через | или , например: komediya|uzhasy"
     ),
@@ -42,15 +52,21 @@ async def random_movie_ru(
     country: Optional[str] = Query(
         None, description="ISO-коды (RU|US|CN) или рус./англ. названия через |"
     ),
+    exclude_tmdb: Optional[str] = Query(None, description="TMDb ids to exclude, comma or | separated"),
+    exclude_kp: Optional[str] = Query(None, description="KP ids to exclude, comma or | separated"),
     _: None = Depends(require_ru_enabled),
     service: RandomService = Depends(get_random_service),
 ):
     return await service.random_ru(
         year_from=year_from,
         year_to=year_to,
+        runtime_min=runtime_min,
+        runtime_max=runtime_max,
         genres=genres,
         vote_avg_min=vote_avg_min,
         country=country,
+        exclude_tmdb=exclude_tmdb,
+        exclude_kp=exclude_kp,
     )
 
 
@@ -58,20 +74,28 @@ async def random_movie_ru(
 async def filters_preview(
     year_from: Optional[int] = Query(None, ge=1900, le=2100),
     year_to: Optional[int] = Query(None, ge=1900, le=2100),
+    runtime_min: Optional[int] = Query(None, ge=1, le=500),
+    runtime_max: Optional[int] = Query(None, ge=1, le=500),
     genres: Optional[str] = Query(
         None, description="TMDb genre ids, comma or | separated"
     ),
     vote_avg_min: float = Query(1.0, ge=0.0, le=10.0, description="IMDb rating 0..10"),
     country: Optional[str] = Query(None, description="ISO 3166-1 code (e.g. US, GB)"),
+    exclude_tmdb: Optional[str] = Query(None, description="TMDb ids to exclude, comma or | separated"),
+    exclude_kp: Optional[str] = Query(None, description="KP ids to exclude, comma or | separated"),
     lang: str = Query("en-US", description="TMDb language code, e.g. en-US or ru-RU"),
     service: RandomService = Depends(get_random_service),
 ):
     return await service.preview_en(
         year_from=year_from,
         year_to=year_to,
+        runtime_min=runtime_min,
+        runtime_max=runtime_max,
         genres=genres,
         vote_avg_min=vote_avg_min,
         country=country,
+        exclude_tmdb=exclude_tmdb,
+        exclude_kp=exclude_kp,
         lang=lang,
     )
 
@@ -80,6 +104,8 @@ async def filters_preview(
 async def filters_preview_ru(
     year_from: Optional[int] = Query(None, ge=1900, le=2100),
     year_to: Optional[int] = Query(None, ge=1900, le=2100),
+    runtime_min: Optional[int] = Query(None, ge=1, le=500),
+    runtime_max: Optional[int] = Query(None, ge=1, le=500),
     genres: Optional[str] = Query(
         None, description="жанры (slug’и) через | или , например: komediya|uzhasy"
     ),
@@ -87,13 +113,19 @@ async def filters_preview_ru(
     country: Optional[str] = Query(
         None, description="ISO-коды (RU|US|CN) или рус./англ. названия через |"
     ),
+    exclude_tmdb: Optional[str] = Query(None, description="TMDb ids to exclude, comma or | separated"),
+    exclude_kp: Optional[str] = Query(None, description="KP ids to exclude, comma or | separated"),
     _: None = Depends(require_ru_enabled),
     service: RandomService = Depends(get_random_service),
 ):
     return await service.preview_ru(
         year_from=year_from,
         year_to=year_to,
+        runtime_min=runtime_min,
+        runtime_max=runtime_max,
         genres=genres,
         vote_avg_min=vote_avg_min,
         country=country,
+        exclude_tmdb=exclude_tmdb,
+        exclude_kp=exclude_kp,
     )

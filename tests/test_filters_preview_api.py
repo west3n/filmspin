@@ -11,9 +11,13 @@ class _FakeRandomService:
         *,
         year_from,
         year_to,
+        runtime_min,
+        runtime_max,
         genres,
         vote_avg_min,
         country,
+        exclude_tmdb,
+        exclude_kp,
         lang,
     ):
         return {
@@ -27,9 +31,13 @@ class _FakeRandomService:
         *,
         year_from,
         year_to,
+        runtime_min,
+        runtime_max,
         genres,
         vote_avg_min,
         country,
+        exclude_tmdb,
+        exclude_kp,
     ):
         return {
             "estimated_total": 5,

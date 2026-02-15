@@ -35,11 +35,15 @@ class FiltersPreviewOut(BaseModel):
 class MovieCard(BaseModel):
     title: str = ""
     year: Optional[Union[int, str]] = None
+    runtime_minutes: Optional[int] = None
     overview: str = ""
     genres: list[str] = Field(default_factory=list)
     countries: list[str] = Field(default_factory=list)
     directors: list[str] = Field(default_factory=list)
     cast: list[str] = Field(default_factory=list)
+    recommendation_reason: Optional[str] = None
+    watch_providers: list[str] = Field(default_factory=list)
+    watch_url: Optional[str] = None
     poster: Optional[str] = None
     backdrop: Optional[str] = None
     tmdb_id: Optional[int] = None
