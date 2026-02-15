@@ -37,35 +37,41 @@
   </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=19">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=23">
 </head>
-<body class="min-h-screen bg-zinc-900 text-zinc-100">
-  <div class="max-w-5xl mx-auto p-6">
-    <header class="flex flex-col items-center justify-center mb-6 text-center gap-2">
-      <div class="w-full flex items-center justify-between">
-        <div></div>
+<body class="min-h-screen text-zinc-100">
+  <main class="site-shell max-w-5xl mx-auto px-4 sm:px-6 pb-14">
+    <header class="flex flex-col items-center justify-center mb-6 text-center gap-2 pt-5">
+      <div class="w-full flex items-center justify-end">
         <div>
           <label for="langSwitch" class="sr-only">Language</label>
-          <select id="langSwitch" class="px-2 py-1 rounded-md bg-zinc-800 border border-zinc-700 text-sm">
+          <select id="langSwitch" class="lang-switch" aria-label="Language">
             <option value="en">EN</option>
             <option value="ru">RU</option>
           </select>
         </div>
       </div>
-      <h1 class="site-title text-6xl sm:text-8xl font-extrabold mb-1">FilmSpin</h1>
-      <p id="slogan" class="text-xs sm:text-xs opacity-80">Don't know what to watch? FilmSpin knows.</p>
+      <h1 class="site-title text-7xl sm:text-8xl mb-0">FilmSpin</h1>
+      <p id="slogan" class="text-sm opacity-90">Don't know what to watch? FilmSpin knows.</p>
     </header>
-    <section id="filters" class="bg-zinc-900/60 rounded-2xl p-5 border-2 border-zinc-600">
-        <div class="flex items-center justify-between">
-          <h2 id="filtersTitle" class="text-lg font-semibold">Filters</h2>
-          <button id="filtersToggle"
-                  class="text-sm px-3 py-1.5 rounded-lg border border-zinc-700 hover:bg-zinc-800/70 transition"
-                  aria-expanded="false" aria-controls="filtersBody">
-            Show
-          </button>
-        </div>
+
+    <section id="filters" class="panel rounded-2xl p-5 border">
+      <div class="flex items-center justify-between gap-3">
+        <h2 id="filtersTitle" class="text-lg font-semibold">Filters</h2>
+        <button id="filtersToggle" class="toggle-btn" aria-expanded="false" aria-controls="filtersBody">Show</button>
+      </div>
+
       <div id="filtersBody" class="collapsible">
+        <div class="filter-tools mt-1 mb-5">
+          <button id="filtersReset" class="tool-btn" type="button">Reset</button>
+          <div class="preset-row">
+            <button id="presetPopular" class="preset-btn" type="button">Popular</button>
+            <button id="presetTop" class="preset-btn" type="button">Top rated</button>
+            <button id="presetRecent" class="preset-btn" type="button">Recent</button>
+          </div>
+        </div>
+
         <div>
           <label id="yearRangeLabel" class="year-label">Year range</label>
           <div class="yr-wrap">
@@ -78,64 +84,86 @@
             <span id="yrMaxBadge" class="yr-badge">2100</span>
           </div>
         </div>
+
         <div class="mt-5">
-            <label id="countriesLabel" class="block text-sm mb-2">Countries</label>
-            <div id="countryChips" class="flex flex-wrap gap-2"></div>
-            <p class="text-xs mt-1 opacity-70">Click to select multiple</p>
+          <label id="countriesLabel" class="block text-sm mb-2">Countries</label>
+          <div id="countryChips" class="chip-wrap"></div>
+          <p id="countriesHint" class="hint-text">Click to select multiple</p>
         </div>
+
         <div class="mt-5">
           <label id="genresLabel" class="block text-sm mb-2">Genres</label>
-          <div id="genreChips" class="flex flex-wrap gap-2"></div>
-          <p class="text-xs mt-1 opacity-70">Click to select multiple</p>
+          <div id="genreChips" class="chip-wrap"></div>
+          <p id="genresHint" class="hint-text">Click to select multiple</p>
         </div>
 
         <div class="mt-6 flex items-center gap-3 w-full">
-          <label id="minRatingLabel" class="text-sm whitespace-nowrap">Min. rating</label>
+          <label id="minRatingLabel" class="text-sm whitespace-nowrap">Min. IMDb rating</label>
           <input id="ratingMin" type="range" min="1" max="9" value="1" step="0.1" class="flex-1">
-          <span id="ratingVal" class="text-sm opacity-80">0</span>
+          <span id="ratingVal" class="text-sm opacity-90">1.0</span>
         </div>
       </div>
     </section>
 
-    <section class="mt-6 flex justify-center">
-    <button id="spin" aria-label="Random movie"
-      class="px-6 py-3 rounded-2xl bg-black text-white font-semibold transition relative overflow-hidden active:scale-95 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
-        <span class="dice">
+    <section class="cta-wrap">
+      <div class="cta-inner">
+        <button id="spin" aria-label="Random movie"
+          class="px-6 py-3 rounded-2xl text-white font-semibold transition relative overflow-hidden active:scale-95 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+          <span class="dice">
             <img src="/img/endurance.png" alt="Endurance" />
-        </span>
-        <span class="label">RANDOM MOVIE</span>
-        <span class="shine" aria-hidden="true"></span>
-    </button>
+          </span>
+          <span class="label">RANDOM MOVIE</span>
+          <span class="shine" aria-hidden="true"></span>
+        </button>
+      </div>
+    </section>
 
+    <div id="requestStatus" class="status-message hidden" role="status" aria-live="polite"></div>
+    <div class="status-actions">
+      <button id="retrySpin" class="retry-btn hidden" type="button">Try again</button>
+    </div>
+
+    <section id="resultSkeleton" class="mt-6 hidden" aria-hidden="true">
+      <div class="skeleton-card rounded-2xl p-5 border">
+        <div class="skeleton-media"></div>
+        <div class="skeleton-content">
+          <div class="skeleton-line w-3/4"></div>
+          <div class="skeleton-line w-2/3"></div>
+          <div class="skeleton-line w-full"></div>
+          <div class="skeleton-line w-full"></div>
+          <div class="skeleton-line w-4/5"></div>
+        </div>
+      </div>
     </section>
 
     <section id="result" class="mt-6 hidden">
-      <div class="result-card bg-zinc-900/60 rounded-2xl p-5 border border-zinc-800 flex flex-col sm:flex-row gap-5 will-change-transform will-change-opacity">
-        <img id="poster" class="w-full sm:w-1/4 h-auto object-cover rounded-xl border border-zinc-800" />
+      <div class="result-card rounded-2xl p-5 border will-change-transform will-change-opacity">
+        <img id="poster" class="poster" alt="Movie poster" />
         <div class="flex-1 min-w-0">
-          <h2 id="title" class="text-2xl font-semibold"></h2>
-          <p id="meta" class="opacity-70 text-sm mt-1 truncate"></p>
-          <p id="overview" class="mt-3 text-xl opacity-90 sm:line-clamp-none"></p>
-          <div id="ratings" class="mt-3 text-base sm:text-lg leading-relaxed">
-          <div class="flex flex-wrap items-center gap-x-1 gap-y-1">
-            <span id="kpRating"   class="hidden inline-flex items-center gap-1"></span>
-            <span id="imdbRating" class="hidden inline-flex items-center gap-1"></span>
-            <span id="tmdbRating" class="hidden inline-flex items-center gap-1 opacity-90"></span>
+          <h2 id="title" class="movie-title"></h2>
+          <p id="meta" class="movie-meta"></p>
+          <p id="overview" class="movie-overview"></p>
+          <div id="ratings" class="ratings-row">
+            <div class="flex flex-wrap items-center gap-x-1 gap-y-1">
+              <span id="kpRating" class="hidden inline-flex items-center gap-1"></span>
+              <span id="imdbRating" class="hidden inline-flex items-center gap-1"></span>
+            </div>
           </div>
-        </div>
         </div>
       </div>
     </section>
-    <footer id="footerData" class="mt-10 text-center text-xs opacity-70">
-    Data from TMDb (+ IMDb rating via OMDb when available)
+
+    <footer id="footerData" class="mt-10 text-center text-xs opacity-80">
+      Data from TMDb (+ IMDb rating via OMDb when available)
     </footer>
-    <footer class="mt-1 text-center text-xs opacity-60 space-x-2">
-      <span>© 2025</span>
+    <footer class="mt-1 text-center text-xs opacity-70 space-x-2 pb-6">
+      <span>© 2026</span>
       <span id="footerBy">by <a href="https://t.me/miroshnikov" class="underline hover:no-underline">Sergey Miroshnikov</a></span>
       <span class="hidden sm:inline">·</span>
       <a id="footerTerms" href="/terms" class="underline hover:no-underline">Terms of Service</a>
     </footer>
-  </div>
-  <script type="module" defer src="/js/app.js?v=20"></script>
+  </main>
+
+  <script type="module" defer src="/js/app.js?v=21"></script>
 </body>
 </html>
