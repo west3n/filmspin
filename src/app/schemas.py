@@ -26,6 +26,12 @@ class MetricsOut(BaseModel):
     avg_ms_by_path: dict[str, float] = Field(default_factory=dict)
 
 
+class FiltersPreviewOut(BaseModel):
+    estimated_total: Optional[int] = None
+    low_results: bool = False
+    unavailable: bool = False
+
+
 class MovieCard(BaseModel):
     title: str = ""
     year: Optional[Union[int, str]] = None

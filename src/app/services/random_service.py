@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 import re
@@ -6,10 +7,11 @@ from typing import Optional
 from ..clients import PoiskkinoClient, TmdbClient
 from ..core.config import RECENT_LIMIT, TTL_RECENT
 from ..repositories import CacheRepository, RecentRepository
-from ..schemas import ApiError, MovieCard
+from ..schemas import ApiError, FiltersPreviewOut, MovieCard
 from .movie_service import MovieResolverService
 
 logger = logging.getLogger("uvicorn.error")
+TTL_PREVIEW_ESTIMATE = min(TTL_RECENT, 60 * 15)
 
 
 class RandomService:
@@ -187,6 +189,145 @@ class RandomService:
             error="No movies found for the selected IMDb rating filter. Try lowering the minimum rating."
         )
 
+    async def preview_en(
+        self,
+        *,
+        year_from: Optional[int],
+        year_to: Optional[int],
+        genres: Optional[str],
+        vote_avg_min: float,
+        country: Optional[str],
+        lang: str,
+    ) -> FiltersPreviewOut:
+        cache_key = (
+            "preview:en:"
+            f"{self.cache.filters_key(lang, year_from, year_to, genres, vote_avg_min, country)}"
+        )
+        hit, cached = await self.cache.get_json_hit(cache_key)
+        if hit and isinstance(cached, dict):
+            try:
+                return FiltersPreviewOut.model_validate(cached)
+            except Exception:
+                pass
+
+        strategy = self._discover_strategy(vote_avg_min)
+        params: dict[str, object] = {
+            "include_adult": "false",
+            "include_video": "false",
+            "sort_by": strategy["sort_by"],
+            "vote_count.gte": strategy["vote_count_gte"],
+        }
+        if genres:
+            params["with_genres"] = genres
+        if year_from:
+            params["primary_release_date.gte"] = f"{year_from}-01-01"
+        if year_to:
+            params["primary_release_date.lte"] = f"{year_to}-12-31"
+        if country:
+            iso_countries = self._normalize_iso_country_filter(country)
+            if iso_countries:
+                params["with_origin_country"] = iso_countries
+
+        first = await self.tmdb.get("/discover/movie", {**params, "page": 1, "language": lang})
+        total = max(0, self._safe_int(first.get("total_results")) or 0)
+        total_pages = min(int(first.get("total_pages", 1) or 1), 500)
+
+        if total_pages == 0 or total == 0:
+            result = FiltersPreviewOut(estimated_total=0, low_results=True, unavailable=False)
+            await self.cache.set_json(cache_key, result.model_dump(), TTL_PREVIEW_ESTIMATE)
+            return result
+
+        if vote_avg_min <= 1.05:
+            result = FiltersPreviewOut(
+                estimated_total=total,
+                low_results=total < 25,
+                unavailable=False,
+            )
+            await self.cache.set_json(cache_key, result.model_dump(), TTL_PREVIEW_ESTIMATE)
+            return result
+
+        sample_target = self._preview_sample_target(vote_avg_min, total)
+        probe_pages = self._preview_probe_pages(vote_avg_min, total_pages, sample_target)
+        candidate_ids = await self._collect_preview_candidates(
+            params=params,
+            lang=lang,
+            first_page=first,
+            total_pages=total_pages,
+            probe_pages=probe_pages,
+            sample_target=sample_target,
+        )
+        if not candidate_ids:
+            result = FiltersPreviewOut(unavailable=True)
+            await self.cache.set_json(cache_key, result.model_dump(), TTL_PREVIEW_ESTIMATE)
+            return result
+
+        pass_stats = await self._count_imdb_preview_hits(
+            lang=lang, tmdb_ids=candidate_ids, min_rating=vote_avg_min
+        )
+        if pass_stats is None:
+            result = FiltersPreviewOut(unavailable=True)
+            await self.cache.set_json(cache_key, result.model_dump(), TTL_PREVIEW_ESTIMATE)
+            return result
+
+        passed, checked = pass_stats
+        estimated = int(round(total * (passed / checked))) if checked > 0 else 0
+        if passed > 0 and estimated == 0:
+            estimated = 1
+
+        result = FiltersPreviewOut(
+            estimated_total=max(0, estimated),
+            low_results=estimated < 25,
+            unavailable=False,
+        )
+        await self.cache.set_json(cache_key, result.model_dump(), TTL_PREVIEW_ESTIMATE)
+        return result
+
+    async def preview_ru(
+        self,
+        *,
+        year_from: Optional[int],
+        year_to: Optional[int],
+        genres: Optional[str],
+        vote_avg_min: float,
+        country: Optional[str],
+    ) -> FiltersPreviewOut:
+        cache_key = (
+            "preview:ru:"
+            f"{self.cache.filters_key(year_from, year_to, genres, vote_avg_min, country)}"
+        )
+        hit, cached = await self.cache.get_json_hit(cache_key)
+        if hit and isinstance(cached, dict):
+            try:
+                return FiltersPreviewOut.model_validate(cached)
+            except Exception:
+                pass
+
+        params: dict[str, object] = {"type": "movie", "page": 1, "limit": 1}
+        if year_from and year_to:
+            params["year"] = f"{year_from}-{year_to}"
+        elif year_from:
+            params["year"] = str(year_from)
+        elif year_to:
+            params["year"] = str(year_to)
+        if genres:
+            params["genres.name"] = genres.replace(",", "|").split("|")
+        if country:
+            params["countries.name"] = country.split("|")
+
+        payload = await self.poiskkino.get("/v1.4/movie", params=params)
+        total = self._extract_poiskkino_total(payload)
+        if total is None:
+            result = FiltersPreviewOut(unavailable=True)
+            await self.cache.set_json(cache_key, result.model_dump(), TTL_PREVIEW_ESTIMATE)
+            return result
+        result = FiltersPreviewOut(
+            estimated_total=max(0, total),
+            low_results=total < 25,
+            unavailable=False,
+        )
+        await self.cache.set_json(cache_key, result.model_dump(), TTL_PREVIEW_ESTIMATE)
+        return result
+
     @staticmethod
     def _normalize_iso_country_filter(raw: str) -> str:
         parts = [p.strip().upper() for p in re.split(r"[|,]", raw or "") if p.strip()]
@@ -251,6 +392,79 @@ class RandomService:
         extras = random.sample(candidates, k=max_probe - 1)
         return [1, *extras]
 
+    async def _collect_preview_candidates(
+        self,
+        *,
+        params: dict[str, object],
+        lang: str,
+        first_page: dict[str, object],
+        total_pages: int,
+        probe_pages: int,
+        sample_target: int,
+    ) -> list[int]:
+        if sample_target <= 0:
+            return []
+
+        page_plan = self._build_page_plan(total_pages, probe_pages)
+        pages = [page for page in page_plan if page != 1]
+        payloads: list[dict[str, object]] = [first_page]
+
+        if pages:
+            tasks = [
+                self.tmdb.get("/discover/movie", {**params, "page": page, "language": lang})
+                for page in pages
+            ]
+            responses = await asyncio.gather(*tasks, return_exceptions=True)
+            for response in responses:
+                if isinstance(response, Exception):
+                    continue
+                payloads.append(response)
+
+        candidate_ids: list[int] = []
+        seen_ids: set[int] = set()
+
+        for payload in payloads:
+            results = payload.get("results")
+            if not isinstance(results, list):
+                continue
+            for item in results:
+                if not isinstance(item, dict):
+                    continue
+                movie_id = self._safe_int(item.get("id"))
+                if movie_id is None or movie_id in seen_ids:
+                    continue
+                seen_ids.add(movie_id)
+                candidate_ids.append(movie_id)
+                if len(candidate_ids) >= sample_target:
+                    return candidate_ids
+        return candidate_ids
+
+    async def _count_imdb_preview_hits(
+        self, *, lang: str, tmdb_ids: list[int], min_rating: float
+    ) -> Optional[tuple[int, int]]:
+        if not tmdb_ids:
+            return None
+
+        semaphore = asyncio.Semaphore(6)
+
+        async def inspect(tmdb_id: int) -> Optional[bool]:
+            async with semaphore:
+                try:
+                    movie = await self.movie_resolver.resolve(lang=lang, tmdb_id=tmdb_id)
+                except Exception:
+                    return None
+                return self._passes_imdb_filter(movie.imdb_rating, min_rating)
+
+        checks = await asyncio.gather(*(inspect(tmdb_id) for tmdb_id in tmdb_ids))
+        usable = [item for item in checks if item is not None]
+        min_usable = min(len(tmdb_ids), max(8, len(tmdb_ids) // 3))
+        if len(usable) < min_usable:
+            return None
+
+        passed = sum(1 for item in usable if item is True)
+        checked = len(usable)
+        return passed, checked
+
     async def _order_by_recentness(
         self, recent_key: str, candidate_pool: list[int], *, prefer_shuffle: bool
     ) -> list[int]:
@@ -277,3 +491,52 @@ class RandomService:
         if min_rating >= 7.5:
             return 22
         return 12
+
+    @staticmethod
+    def _preview_sample_target(min_rating: float, total_results: int) -> int:
+        if total_results <= 120:
+            return max(1, total_results)
+        if min_rating >= 8.5:
+            return 90
+        if min_rating >= 7.5:
+            return 72
+        if min_rating >= 6.5:
+            return 56
+        if min_rating >= 5.5:
+            return 44
+        return 32
+
+    @staticmethod
+    def _preview_probe_pages(min_rating: float, total_pages: int, sample_target: int) -> int:
+        if total_pages <= 1:
+            return 1
+        pages_for_sample = max(1, (sample_target + 19) // 20)
+        if min_rating >= 8.5:
+            base = 16
+        elif min_rating >= 7.5:
+            base = 12
+        elif min_rating >= 6.5:
+            base = 9
+        else:
+            base = 7
+        return min(total_pages, max(base, pages_for_sample))
+
+    @staticmethod
+    def _safe_int(value: object) -> Optional[int]:
+        try:
+            parsed = int(value)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return None
+        return parsed
+
+    @classmethod
+    def _extract_poiskkino_total(cls, payload: dict[str, object]) -> Optional[int]:
+        for key in ("total", "totalDocs", "total_docs", "totalCount", "count"):
+            parsed = cls._safe_int(payload.get(key))
+            if parsed is not None:
+                return parsed
+
+        docs = payload.get("docs")
+        if isinstance(docs, list):
+            return len(docs)
+        return None
