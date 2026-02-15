@@ -1,5 +1,5 @@
-import { I18N, langMap } from './modules/i18n.js';
-import { getJson } from './modules/http.js';
+import { I18N, langMap } from './modules/i18n.js?v=22';
+import { getJson } from './modules/http.js?v=22';
 
 const FILTERS_STORAGE_KEY = 'fs_filters_v2';
 const YEAR_MIN = 1900;
