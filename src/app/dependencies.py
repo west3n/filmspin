@@ -11,6 +11,8 @@ from .core.config import (
     HTTP_POOL_TIMEOUT,
     HTTP_MAX_CONNECTIONS,
     HTTP_MAX_KEEPALIVE_CONNECTIONS,
+    HTTP_ENABLE_HTTP2,
+    HTTP_TRUST_ENV,
     RU_ENABLED,
 )
 from .repositories import CacheRepository, MappingRepository, RecentRepository
@@ -49,8 +51,8 @@ async def get_http_client() -> httpx.AsyncClient:
                         max_connections=HTTP_MAX_CONNECTIONS,
                         max_keepalive_connections=HTTP_MAX_KEEPALIVE_CONNECTIONS,
                     ),
-                    http2=True,
-                    trust_env=False,
+                    http2=HTTP_ENABLE_HTTP2,
+                    trust_env=HTTP_TRUST_ENV,
                 )
     return _http
 

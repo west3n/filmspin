@@ -19,6 +19,8 @@ HTTP_WRITE_TIMEOUT = _settings.http_write_timeout
 HTTP_POOL_TIMEOUT = _settings.http_pool_timeout
 HTTP_MAX_CONNECTIONS = _settings.http_max_connections
 HTTP_MAX_KEEPALIVE_CONNECTIONS = _settings.http_max_keepalive_connections
+HTTP_ENABLE_HTTP2 = _settings.http_enable_http2
+HTTP_TRUST_ENV = _settings.http_trust_env
 
 TTL_GENRES = _settings.ttl_genres
 TTL_MOVIE_DETAIL = _settings.ttl_movie_detail

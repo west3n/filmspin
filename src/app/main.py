@@ -3,6 +3,7 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 from fastapi import FastAPI, Request
@@ -56,9 +57,9 @@ def create_app() -> FastAPI:
         upstream_url = None
         if isinstance(exc, httpx.HTTPStatusError):
             upstream_status = exc.response.status_code
-            upstream_url = str(exc.request.url)
+            upstream_url = _sanitize_url(exc.request.url)
         elif isinstance(exc, httpx.RequestError) and exc.request is not None:
-            upstream_url = str(exc.request.url)
+            upstream_url = _sanitize_url(exc.request.url)
 
         logger.warning(
             "[FilmSpin] upstream request failed: path=%s status=%s url=%s error=%s",
@@ -90,6 +91,12 @@ def create_app() -> FastAPI:
         )
     app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
     return app
+
+
+def _sanitize_url(url: httpx.URL) -> str:
+    parts = urlsplit(str(url))
+    # Never log query params to avoid leaking API keys/tokens in server logs.
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
 
 
 app = create_app()

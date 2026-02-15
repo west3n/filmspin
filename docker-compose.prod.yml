@@ -6,6 +6,9 @@ services:
       - .env.prod
     environment:
       REDIS_URL: redis://redis:6379/0
+    dns:
+      - ${DNS_SERVER_1:-1.1.1.1}
+      - ${DNS_SERVER_2:-8.8.8.8}
     command: >-
       .venv/bin/uvicorn src.app.main:app
       --host 0.0.0.0

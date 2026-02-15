@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     http_pool_timeout: float = 5.0
     http_max_connections: int = 100
     http_max_keepalive_connections: int = 20
+    http_enable_http2: bool = False
+    http_trust_env: bool = True
     ru_enabled: bool = True
 
     ttl_genres: int = 60 * 60 * 24 * 30

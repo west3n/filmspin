@@ -23,6 +23,8 @@ Notes:
    - `ACME_EMAIL`
    - API keys (`TMDB_API_KEY`, `OMDB_API_KEY`)
    - `APP_IMAGE` (defaults to GHCR image path)
+   - `HTTP_TRUST_ENV=true` (allow proxy vars if your VPS needs outbound proxy)
+   - `HTTP_ENABLE_HTTP2=false` (more compatible upstream networking)
 3. Validate config before deploy:
    - `make preflight-prod`
 
