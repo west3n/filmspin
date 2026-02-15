@@ -207,6 +207,13 @@ function showSkeleton(show) {
   resultSkeletonEl.classList.toggle('hidden', !show);
 }
 
+function hideResultCard() {
+  if (!resultEl) return;
+  resultEl.classList.add('hidden');
+  const cardEl = resultEl.querySelector('.result-card');
+  if (cardEl) cardEl.classList.remove('animate-in');
+}
+
 function setSpinLoading(isLoading) {
   spinBtn.classList.remove('btn-press');
   void spinBtn.offsetWidth;
@@ -576,11 +583,12 @@ async function reloadCurrentInNewLang() {
 }
 
 async function spin() {
-  const hasRenderedCard = !resultEl.classList.contains('hidden');
+  hideResultCard();
+  currentMovie = null;
   setSpinLoading(true);
   retryBtn.classList.add('hidden');
   showStatus('info', t('status_loading'));
-  showSkeleton(!hasRenderedCard);
+  showSkeleton(true);
 
   try {
     const params = new URLSearchParams();
