@@ -8,8 +8,11 @@
   <meta name="description" content="Don’t know what to watch? FilmSpin knows.">
 
   <link rel="canonical" href="https://filmspin.cloud/" />
-  <link rel="icon" href="img/favicon.ico">
-  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="preload" as="image" href="/img/logo.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=8">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=8">
+  <link rel="shortcut icon" href="/favicon.ico?v=8">
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png?v=8">
 
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://filmspin.cloud/">
@@ -36,189 +39,220 @@
   }
   </script>
 
+  <script>
+    try {
+      const now = Date.now() / 1000;
+      const root = document.documentElement;
+      root.style.setProperty('--star-drift-delay', `${-(now % 62)}s`);
+      root.style.setProperty('--star-reverse-delay', `${-(now % 78)}s`);
+      root.style.setProperty('--star-twinkle-delay-a', `${-(now % 4.6)}s`);
+      root.style.setProperty('--star-twinkle-delay-b', `${-(now % 5.2)}s`);
+    } catch (_) {}
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=49">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=158">
 </head>
-<body class="min-h-screen text-zinc-100">
-  <main class="site-shell max-w-5xl mx-auto px-4 sm:px-6 pb-14">
-    <header class="flex flex-col items-center justify-center mb-6 text-center gap-2 pt-5">
-      <div class="w-full flex items-center justify-end">
-        <div>
-          <label for="langSwitch" class="sr-only">Language</label>
-          <select id="langSwitch" class="lang-switch" aria-label="Language">
-            <option value="en">EN</option>
-            <option value="ru">RU</option>
-          </select>
-        </div>
+<body class="home-page min-h-screen">
+  <main class="site-shell home-shell">
+    <header class="site-global-header">
+      <a class="site-global-logo" href="/" aria-label="FilmSpin Home">
+        <img src="/img/logo.png" alt="FilmSpin" width="1080" height="1080" loading="eager" decoding="sync" fetchpriority="high">
+      </a>
+      <div class="site-global-meta">
+        <p id="slogan" class="hero-slogan" aria-live="polite">Don't know what to watch? FilmSpin knows.</p>
+        <p id="discoveryMeter" class="discovery-meter" aria-live="polite"></p>
       </div>
-      <h1 class="site-title text-7xl sm:text-8xl mb-0">FilmSpin</h1>
-      <p id="slogan" class="hero-slogan text-sm opacity-90" aria-live="polite">Don't know what to watch? FilmSpin knows.</p>
-      <p id="discoveryMeter" class="discovery-meter" aria-live="polite"></p>
+      <div class="site-global-controls">
+        <button id="heroFiltersBtn" class="hero-filters-btn" type="button" aria-expanded="false" aria-controls="filters">Filters</button>
+        <label for="langSwitch" class="sr-only">Language</label>
+        <select id="langSwitch" class="lang-switch" aria-label="Language">
+          <option value="en">EN</option>
+          <option value="ru">RU</option>
+        </select>
+      </div>
     </header>
 
-    <section id="filters" class="panel rounded-2xl p-5 border">
-      <div id="filtersHeader" class="filters-header flex items-center justify-between gap-3" role="button" tabindex="0">
-        <h2 id="filtersTitle" class="text-lg font-semibold">Filters</h2>
-        <button id="filtersToggle" class="toggle-btn toggle-icon-btn" aria-expanded="false" aria-controls="filtersBody" aria-label="Expand filters">
+    <section id="filters" class="filters-drawer" aria-hidden="true">
+      <div id="filtersHeader" class="filters-header filters-drawer-head flex items-center justify-between gap-3">
+        <button id="filtersToggle" class="toggle-btn toggle-icon-btn filters-collapser sr-only" aria-expanded="false" aria-controls="filtersBody" aria-label="Expand filters" tabindex="-1">
           <span class="sr-only">Toggle filters</span>
           <span class="toggle-icon" aria-hidden="true"></span>
         </button>
       </div>
 
       <div id="filtersBody" class="collapsible">
-        <div class="filter-tools mt-1 mb-5">
-          <button id="filtersReset" class="tool-btn" type="button">Reset</button>
-          <div class="preset-row">
-            <button id="presetPopular" class="preset-btn" type="button">Popular</button>
-            <button id="presetTop" class="preset-btn" type="button">Top rated</button>
-            <button id="presetRecent" class="preset-btn" type="button">Recent</button>
-          </div>
-        </div>
-
-        <div class="mood-tools mb-5">
-          <p id="moodLabel" class="year-label">Mood</p>
-          <div class="mood-row">
-            <button id="moodEasy" class="preset-btn mood-btn" type="button">Easy</button>
-            <button id="moodTense" class="preset-btn mood-btn" type="button">Tense</button>
-            <button id="moodWarm" class="preset-btn mood-btn" type="button">Warm</button>
-            <button id="moodMindbender" class="preset-btn mood-btn" type="button">Mind-bender</button>
-          </div>
-        </div>
-
-        <div class="apply-controls">
-          <button id="autoApplyToggle" class="tool-btn" type="button" aria-pressed="true">Auto-apply: ON</button>
-          <button id="applyFilters" class="tool-btn" type="button">Apply</button>
-          <span id="filtersPending" class="pending-pill hidden">Pending changes</span>
-        </div>
-
-        <button id="relaxFilters" class="tool-btn hidden" type="button">Relax filters</button>
-
-        <div>
-          <label id="yearRangeLabel" class="year-label">Year range</label>
-          <div class="yr-wrap">
-            <div class="yr-track" id="yrTrack">
-              <div class="yr-fill" id="yrFill"></div>
+        <section class="filters-group filters-group-top">
+          <div class="filters-top-row">
+            <div class="filters-top-actions">
+              <button id="filtersReset" class="tool-btn" type="button">Reset</button>
+              <button id="autoApplyToggle" class="tool-btn" type="button" aria-pressed="true">Auto-apply: ON</button>
+              <button id="presetPopular" class="preset-btn" type="button">Popular</button>
+              <button id="presetTop" class="preset-btn" type="button">Top rated</button>
+              <button id="presetRecent" class="preset-btn" type="button">Recent</button>
+              <div class="mood-inline">
+                <span id="moodLabel" class="sr-only">Mood</span>
+                <div class="mood-row mood-row-inline">
+                  <button id="moodEasy" class="preset-btn mood-btn" type="button">Easy</button>
+                  <button id="moodTense" class="preset-btn mood-btn" type="button">Tense</button>
+                  <button id="moodWarm" class="preset-btn mood-btn" type="button">Warm</button>
+                  <button id="moodMindbender" class="preset-btn mood-btn" type="button">Mind-bender</button>
+                </div>
+              </div>
+              <button id="applyFilters" class="tool-btn" type="button">Apply</button>
+              <button id="relaxFilters" class="tool-btn hidden" type="button">Relax filters</button>
             </div>
-            <input id="yrMin" class="yr-input" type="range" min="1900" max="2100" step="1" value="1900">
-            <input id="yrMax" class="yr-input" type="range" min="1900" max="2100" step="1" value="2100">
-            <span id="yrMinBadge" class="yr-badge">1900</span>
-            <span id="yrMaxBadge" class="yr-badge">2100</span>
-          </div>
-        </div>
-
-        <div class="advanced-tools">
-          <button id="advancedToggle" class="toggle-btn" aria-expanded="false" aria-controls="advancedBody">Show advanced</button>
-        </div>
-
-        <div id="advancedBody" class="collapsible advanced-collapsible">
-          <div class="mt-5">
-            <label id="countriesLabel" class="block text-sm mb-2">Countries</label>
-            <div id="countryChips" class="chip-wrap"></div>
-            <p id="countriesHint" class="hint-text">Click to select multiple</p>
+            <span id="filtersPending" class="pending-pill hidden">Pending changes</span>
           </div>
 
-          <div class="mt-5">
-            <label id="genresLabel" class="block text-sm mb-2">Genres</label>
-            <div id="genreChips" class="chip-wrap"></div>
-            <p id="genresHint" class="hint-text">Click to select multiple</p>
-          </div>
+          <div class="filters-top-limits">
+            <div class="year-range-block">
+              <label id="yearRangeLabel" class="year-label">Year range</label>
+              <div class="yr-wrap">
+                <div class="yr-track" id="yrTrack">
+                  <div class="yr-fill" id="yrFill"></div>
+                </div>
+                <input id="yrMin" class="yr-input" type="range" min="1900" max="2100" step="1" value="1900">
+                <input id="yrMax" class="yr-input" type="range" min="1900" max="2100" step="1" value="2100">
+                <span id="yrMinBadge" class="yr-badge">1900</span>
+                <span id="yrMaxBadge" class="yr-badge">2100</span>
+              </div>
+            </div>
 
-          <div class="mt-6 flex items-center gap-3 w-full">
-            <label id="minRatingLabel" class="text-sm whitespace-nowrap">Min. IMDb rating</label>
-            <input id="ratingMin" type="range" min="1" max="9" value="1" step="0.1" class="flex-1">
-            <span id="ratingVal" class="text-sm opacity-90">1.0</span>
-          </div>
-
-          <div class="mt-5">
-            <label id="runtimeLabel" class="block text-sm mb-2">Runtime</label>
-            <div id="runtimeChips" class="chip-wrap runtime-wrap">
-              <button id="runtimeAny" class="chip runtime-chip is-active" type="button" data-min="" data-max="">Any</button>
-              <button id="runtimeShort" class="chip runtime-chip" type="button" data-min="" data-max="89">&lt; 90 min</button>
-              <button id="runtimeStandard" class="chip runtime-chip" type="button" data-min="90" data-max="120">90-120 min</button>
-              <button id="runtimeLong" class="chip runtime-chip" type="button" data-min="121" data-max="">120+ min</button>
+            <div class="rating-block">
+              <label id="minRatingLabel" class="year-label">Min. IMDb rating</label>
+              <div class="rating-wrap">
+                <input id="ratingMin" type="range" min="1" max="9" value="1" step="0.1">
+                <span id="ratingVal" class="text-sm opacity-90">1.0</span>
+              </div>
             </div>
           </div>
-        </div>
+
+        </section>
+
+        <section class="filters-group filters-group-countries">
+          <label id="countriesLabel" class="block text-sm mb-2">Countries (multiple choice)</label>
+          <div id="countryChips" class="chip-wrap"></div>
+        </section>
+
+        <section class="filters-group filters-group-genres">
+          <label id="genresLabel" class="block text-sm mb-2">Genres (multiple choice)</label>
+          <div id="genreChips" class="chip-wrap"></div>
+        </section>
       </div>
     </section>
 
-    <section class="cta-wrap">
-      <div class="cta-inner">
-        <button id="spin" aria-label="Random movie"
-          class="px-6 py-3 rounded-2xl text-white font-semibold transition relative overflow-hidden active:scale-95 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
-          <span class="dice">
-            <img src="/img/endurance.png" alt="Endurance" />
-          </span>
-          <span class="label">RANDOM MOVIE</span>
-          <span class="shine" aria-hidden="true"></span>
-        </button>
+    <header class="home-hero pt-5">
+      <div class="home-center">
+        <div class="home-logo-wrap">
+          <h1 id="siteTitle" class="site-title mb-0" aria-label="FilmSpin">
+            <span class="site-title-word site-title-film">FILM</span>
+            <span class="site-title-word site-title-spin">SPIN</span>
+          </h1>
+        </div>
+        <div class="home-right-rail">
+          <section class="cta-wrap">
+            <div class="cta-inner">
+              <button id="spin" aria-label="Random movie"
+                class="relative flex items-center justify-center">
+                <span class="dice">
+                  <img src="/img/endurance.png" alt="Endurance" />
+                </span>
+                <span class="label">RANDOM MOVIE</span>
+                <span class="shine" aria-hidden="true"></span>
+              </button>
+            </div>
+          </section>
+
+          <div class="home-result-stage">
+            <section id="result" class="hidden">
+              <div class="result-card rounded-2xl p-5 border will-change-transform will-change-opacity">
+                <button id="resultSpin" class="result-respin" type="button" aria-label="Another movie">
+                  <img src="/img/endurance.png" alt="" />
+                  <span id="resultSpinText" class="result-respin-text">Another movie</span>
+                </button>
+                <div id="resultBackdrop" class="result-backdrop" aria-hidden="true"></div>
+                <div class="result-content flex-1 min-w-0">
+                  <h2 id="title" class="movie-title"></h2>
+                  <p id="meta" class="movie-meta"></p>
+                  <div id="people" class="people-block hidden">
+                    <p id="directorRow" class="people-row hidden">
+                      <span id="directorLabel" class="people-label">Director:</span>
+                      <span id="directorValue"></span>
+                    </p>
+                    <p id="castRow" class="people-row hidden">
+                      <span id="castLabel" class="people-label">Cast:</span>
+                      <span id="castValue"></span>
+                    </p>
+                  </div>
+                  <p id="overview" class="movie-overview"></p>
+                  <div id="ratings" class="ratings-row">
+                    <div class="flex flex-wrap items-center gap-x-1 gap-y-1">
+                      <span id="kpRating" class="hidden inline-flex items-center gap-1"></span>
+                      <span id="imdbRating" class="hidden inline-flex items-center gap-1"></span>
+                    </div>
+                  </div>
+                  <section id="watchRow" class="watch-row hidden" aria-label="Where to watch">
+                    <div class="watch-head">
+                      <p id="watchLabel" class="watch-label">Where to watch</p>
+                      <a id="watchOpenAll" class="watch-open-all hidden underline hover:no-underline" target="_blank" rel="noopener">Open all options</a>
+                    </div>
+                    <div id="watchProviders" class="watch-providers"></div>
+                  </section>
+                </div>
+              </div>
+            </section>
+            <section id="resultSkeleton" class="hidden" aria-hidden="true">
+              <article class="search-card rounded-2xl p-5 border">
+                <div class="search-backdrop"></div>
+                <div class="search-loader">
+                  <div class="search-loader-core" aria-hidden="true">
+                    <span class="search-loader-ring search-loader-ring-a"></span>
+                    <span class="search-loader-ring search-loader-ring-b"></span>
+                    <span class="search-loader-sweep"></span>
+                    <img class="search-loader-ship" src="/img/endurance.png" alt="">
+                  </div>
+                  <p id="searchLoaderText" class="search-loader-text">PICKING NEXT MOVIE</p>
+                  <p id="searchLoaderSubtext" class="search-loader-subtext">Scanning filters and ratings</p>
+                </div>
+              </article>
+            </section>
+          </div>
+        </div>
       </div>
-    </section>
+    </header>
 
     <div id="requestStatus" class="status-message hidden" role="status" aria-live="polite"></div>
     <div class="status-actions">
       <button id="retrySpin" class="retry-btn hidden" type="button">Try again</button>
     </div>
 
-    <section id="resultSkeleton" class="mt-6 hidden" aria-hidden="true">
-      <div class="skeleton-card rounded-2xl p-5 border">
-        <div class="skeleton-media"></div>
-        <div class="skeleton-content">
-          <div class="skeleton-line w-3/4"></div>
-          <div class="skeleton-line w-2/3"></div>
-          <div class="skeleton-line w-full"></div>
-          <div class="skeleton-line w-full"></div>
-          <div class="skeleton-line w-4/5"></div>
+    <footer class="site-footer" aria-label="Site footer">
+      <div class="site-footer-inner">
+        <span class="site-footer-copy">© 2026 FilmSpin</span>
+        <nav class="site-footer-nav" aria-label="Legal links">
+          <a id="footerTerms" href="/terms" class="site-footer-link">Terms of Service</a>
+          <a id="footerPrivacy" href="/privacy" class="site-footer-link">Privacy Policy</a>
+          <a id="footerAbout" href="/about" class="site-footer-link">About</a>
+        </nav>
+        <div class="site-footer-social" aria-label="Social links">
+          <a class="site-footer-icon-link" href="https://t.me/miroshnikov" target="_blank" rel="noopener" aria-label="Telegram">
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <path d="M20.78 3.69a1.16 1.16 0 0 0-1.18-.16L3.27 10.03a1.16 1.16 0 0 0 .05 2.16l3.74 1.39 1.39 4.52a1.16 1.16 0 0 0 1.97.48l2.36-2.43 3.85 2.82a1.16 1.16 0 0 0 1.84-.69l2.9-13.33a1.16 1.16 0 0 0-.59-1.26Zm-3.97 3.12-6.72 6.11a.65.65 0 0 0-.2.33l-.52 2.45-.76-2.46a.65.65 0 0 0-.4-.41L5.1 11.67l12.05-4.86-.34.3Z"/>
+            </svg>
+          </a>
+          <a class="site-footer-icon-link" href="https://github.com/west3n/filmspin" target="_blank" rel="noopener" aria-label="GitHub">
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.71c-2.77.6-3.35-1.18-3.35-1.18-.46-1.16-1.11-1.46-1.11-1.46-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.35 1.09 2.92.83.09-.65.35-1.09.63-1.34-2.21-.25-4.53-1.11-4.53-4.93 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.61 9.61 0 0 1 5 0c1.91-1.29 2.74-1.02 2.74-1.02.56 1.37.21 2.39.11 2.64.65.7 1.03 1.59 1.03 2.68 0 3.83-2.32 4.67-4.54 4.92.36.31.67.91.67 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/>
+            </svg>
+          </a>
         </div>
       </div>
-    </section>
-
-    <section id="result" class="mt-6 hidden">
-      <div class="result-card rounded-2xl p-5 border will-change-transform will-change-opacity">
-        <img id="poster" class="poster" alt="Movie poster" />
-        <div class="flex-1 min-w-0">
-          <h2 id="title" class="movie-title"></h2>
-          <p id="meta" class="movie-meta"></p>
-          <div id="people" class="people-block hidden">
-            <p id="directorRow" class="people-row hidden">
-              <span id="directorLabel" class="people-label">Director:</span>
-              <span id="directorValue"></span>
-            </p>
-            <p id="castRow" class="people-row hidden">
-              <span id="castLabel" class="people-label">Cast:</span>
-              <span id="castValue"></span>
-            </p>
-          </div>
-          <p id="overview" class="movie-overview"></p>
-          <div id="ratings" class="ratings-row">
-            <div class="flex flex-wrap items-center gap-x-1 gap-y-1">
-              <span id="kpRating" class="hidden inline-flex items-center gap-1"></span>
-              <span id="imdbRating" class="hidden inline-flex items-center gap-1"></span>
-            </div>
-          </div>
-          <section id="watchRow" class="watch-row hidden" aria-label="Where to watch">
-            <div class="watch-head">
-              <p id="watchLabel" class="watch-label">Where to watch</p>
-              <a id="watchOpenAll" class="watch-open-all hidden underline hover:no-underline" target="_blank" rel="noopener">Open all options</a>
-            </div>
-            <div id="watchProviders" class="watch-providers"></div>
-          </section>
-        </div>
-      </div>
-    </section>
-
-    <footer id="footerData" class="mt-10 text-center text-xs opacity-80">
-      Movie data: <a href="https://www.themoviedb.org/" target="_blank" rel="noopener" class="underline hover:no-underline">TMDb</a>, IMDb ratings via <a href="https://www.omdbapi.com/" target="_blank" rel="noopener" class="underline hover:no-underline">OMDb</a>
-    </footer>
-    <footer class="mt-1 text-center text-xs opacity-70 space-x-2 pb-6">
-      <span>© 2026</span>
-      <span id="footerBy">by <a href="https://t.me/miroshnikov" class="underline hover:no-underline">Sergey Miroshnikov</a></span>
-      <span class="hidden sm:inline">·</span>
-      <a id="footerTerms" href="/terms" class="underline hover:no-underline">Terms of Service</a>
     </footer>
   </main>
 
-  <script type="module" defer src="/js/app.js?v=43"></script>
+  <script src="/js/lang_picker.js?v=1"></script>
+  <script type="module" defer src="/js/app.js?v=85"></script>
 </body>
 </html>

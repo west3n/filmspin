@@ -10,7 +10,16 @@ export function createCardController({ elements, deps }) {
     if (!resultEl) return;
     resultEl.classList.add('hidden');
     const cardEl = resultEl.querySelector('.result-card');
-    if (cardEl) cardEl.classList.remove('animate-in');
+    if (cardEl) {
+      cardEl.classList.remove('animate-in', 'is-refreshing');
+    }
+  }
+
+  function setRefreshing(isRefreshing) {
+    if (!resultEl) return;
+    const cardEl = resultEl.querySelector('.result-card');
+    if (!cardEl) return;
+    cardEl.classList.toggle('is-refreshing', Boolean(isRefreshing));
   }
 
   function setCurrentMovieFromData(data) {
@@ -26,8 +35,17 @@ export function createCardController({ elements, deps }) {
     currentMovie = null;
   }
 
+  function normalizeImageUrl(raw) {
+    const value = String(raw || '').trim();
+    if (!value || value === 'null' || value === 'undefined') return '';
+    if (value.startsWith('http://') || value.startsWith('https://')) return value;
+    if (value.startsWith('/')) return `https://image.tmdb.org/t/p/w1280${value}`;
+    return value;
+  }
+
   function renderCard(data) {
     const cardEl = resultEl.querySelector('.result-card');
+    const backdropEl = document.getElementById('resultBackdrop');
     resultEl.classList.remove('hidden');
 
     if (cardEl) {
@@ -36,15 +54,42 @@ export function createCardController({ elements, deps }) {
       cardEl.classList.add('animate-in');
     }
 
-    const title = `${data.title || 'Untitled'} (${data.year || '—'})`;
-    document.getElementById('title').textContent = title;
+    const titleEl = document.getElementById('title');
+    titleEl.textContent = '';
+    const titleMain = document.createElement('span');
+    titleMain.className = 'movie-title-main';
+    titleMain.textContent = data.title || 'Untitled';
+    titleEl.appendChild(titleMain);
+    if (data.year) {
+      const titleYear = document.createElement('span');
+      titleYear.className = 'movie-title-year';
+      titleYear.textContent = `(${data.year})`;
+      titleEl.appendChild(titleYear);
+    }
 
     const metaEl = document.getElementById('meta');
     const metaChunks = [];
     if (Array.isArray(data.genres) && data.genres.length) metaChunks.push(data.genres.join(' · '));
     if (Array.isArray(data.countries) && data.countries.length) metaChunks.push(data.countries.join(', '));
     if (Number.isFinite(Number(data.runtime_minutes))) metaChunks.push(`${Number(data.runtime_minutes)} min`);
-    metaEl.textContent = metaChunks.join('   •   ');
+    metaEl.innerHTML = '';
+    if (metaChunks.length) {
+      metaChunks.forEach((chunk, index) => {
+        const item = document.createElement('span');
+        item.className = 'meta-item';
+        item.textContent = chunk;
+        metaEl.appendChild(item);
+        if (index < metaChunks.length - 1) {
+          const sep = document.createElement('span');
+          sep.className = 'meta-sep';
+          sep.textContent = '•';
+          metaEl.appendChild(sep);
+        }
+      });
+      metaEl.classList.remove('hidden');
+    } else {
+      metaEl.classList.add('hidden');
+    }
 
     const peopleEl = document.getElementById('people');
     const directorRowEl = document.getElementById('directorRow');
@@ -80,9 +125,24 @@ export function createCardController({ elements, deps }) {
 
     document.getElementById('overview').textContent = data.overview || '—';
 
-    const posterEl = document.getElementById('poster');
-    posterEl.src = data.poster || '';
-    posterEl.alt = data.title ? `${data.title} poster` : 'Movie poster';
+    const backdropUrl = normalizeImageUrl(
+      data.backdrop || data.poster || data.backdrop_url || data.poster_url || '',
+    );
+    if (backdropEl) {
+      if (backdropUrl) {
+        backdropEl.style.backgroundImage = `url("${backdropUrl}")`;
+        if (cardEl) {
+          cardEl.style.setProperty('--result-image', `url("${backdropUrl}")`);
+          cardEl.classList.add('has-backdrop');
+        }
+      } else {
+        backdropEl.style.backgroundImage = '';
+        if (cardEl) {
+          cardEl.style.removeProperty('--result-image');
+          cardEl.classList.remove('has-backdrop');
+        }
+      }
+    }
 
     const kpEl = document.getElementById('kpRating');
     const imdbEl = document.getElementById('imdbRating');
@@ -154,7 +214,6 @@ export function createCardController({ elements, deps }) {
         watchOpenAllEl.removeAttribute('href');
         watchOpenAllEl.classList.add('hidden');
       }
-
       providers.forEach((provider) => {
         const href = provider.link || openLink;
         const itemEl = href ? document.createElement('a') : document.createElement('span');
@@ -229,6 +288,7 @@ export function createCardController({ elements, deps }) {
 
   return {
     hideResultCard,
+    setRefreshing,
     renderCard,
     setCurrentMovieFromData,
     clearCurrentMovie,

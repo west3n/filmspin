@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title id="docTitle">FilmSpin — About</title>
+  <meta name="description" content="About FilmSpin." />
+  <link rel="preload" as="image" href="/img/logo.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=8" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=8" />
+  <link rel="shortcut icon" href="/favicon.ico?v=8" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png?v=8" />
+  <script>
+    try {
+      if (sessionStorage.getItem('fs_legal_enter') === '1') {
+        document.documentElement.classList.add('legal-nav-enter');
+        sessionStorage.removeItem('fs_legal_enter');
+      }
+      const now = Date.now() / 1000;
+      const root = document.documentElement;
+      root.style.setProperty('--star-drift-delay', `${-(now % 62)}s`);
+      root.style.setProperty('--star-reverse-delay', `${-(now % 78)}s`);
+      root.style.setProperty('--star-twinkle-delay-a', `${-(now % 4.6)}s`);
+      root.style.setProperty('--star-twinkle-delay-b', `${-(now % 5.2)}s`);
+    } catch (_) {}
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=152">
+</head>
+<body class="terms-page about-page">
+  <main class="site-shell terms-shell">
+    <header class="site-global-header">
+      <a class="site-global-logo" href="/" aria-label="FilmSpin Home">
+        <img src="/img/logo.png" alt="FilmSpin" width="1080" height="1080" loading="eager" decoding="sync" fetchpriority="high">
+      </a>
+      <div class="site-global-controls">
+        <span class="header-control-spacer" aria-hidden="true">Filters</span>
+        <label for="langSwitch" class="sr-only">Language</label>
+        <select id="langSwitch" class="lang-switch" aria-label="Language">
+          <option value="en">EN</option>
+          <option value="ru">RU</option>
+        </select>
+      </div>
+    </header>
+
+    <section class="panel terms-hero">
+      <p class="terms-kicker" data-i18n="kicker">About</p>
+      <div class="about-title-row">
+        <h1 class="terms-title">
+          <span class="terms-title-line terms-title-line-a" data-i18n="title_line_a">About</span>
+          <span class="terms-title-line terms-title-line-b" data-i18n="title_line_b">FilmSpin</span>
+        </h1>
+        <div id="aboutEasterRail" class="about-easter-rail" aria-hidden="true">
+          <div id="aboutOrbit" class="about-orbit">
+            <img class="about-orbit-ship" src="/img/endurance.png" alt="">
+          </div>
+          <p id="aboutPoemLine" class="about-poem-line"></p>
+        </div>
+      </div>
+      <p class="terms-subtitle" data-i18n="subtitle">
+        FilmSpin started as a tiny one-button side project to solve one daily problem: spending more time choosing a movie than watching it.
+      </p>
+      <p class="terms-updated" data-i18n="updated">Last updated: February 17, 2026</p>
+    </section>
+
+    <section class="terms-grid" aria-label="About FilmSpin">
+      <article class="panel terms-card">
+        <h2 data-i18n="h1">1. Mission</h2>
+        <p data-i18n="p1">Help you decide faster. One clear suggestion, strong filters, and no endless scrolling.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h2">2. How It Works</h2>
+        <p data-i18n="p2">FilmSpin combines TMDb metadata, IMDb signals, and lightweight ranking logic to return one solid pick instead of a noisy list.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h3">3. Product Principles</h2>
+        <p data-i18n="p3">Speed over clutter, control over randomness, and useful details over decorative noise.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h4">4. Why Endurance</h2>
+        <p data-i18n="p4">The Endurance icon is a reminder that discovery can feel like navigation: precise inputs, one trajectory, meaningful destination.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h5">5. Built With</h2>
+        <p data-i18n="p5">FastAPI on the backend, vanilla JS on the frontend, and a strong focus on reliability, cache discipline, and clear UI states.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h6">6. What We Optimize</h2>
+        <p data-i18n="p6">Response time, recommendation freshness, and confidence that every click visibly does exactly what you expect.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h7">7. What Is Next</h2>
+        <p data-i18n="p7">Smarter mood presets, richer watch-provider coverage, and better “why this movie” explanations.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h8">8. Open Project</h2>
+        <p data-i18n="p8">FilmSpin evolves through real usage and feedback. If something feels off, it is a candidate for improvement.</p>
+      </article>
+    </section>
+
+    <section class="panel terms-contact">
+      <h2 data-i18n="h9">9. Contact</h2>
+      <p data-i18n="p9">Ideas, bugs, and feature requests: <a href="https://t.me/miroshnikov" target="_blank" rel="noopener">t.me/miroshnikov</a></p>
+    </section>
+
+    <footer class="terms-footer">© 2026 FilmSpin</footer>
+  </main>
+
+  <script src="/js/lang_picker.js?v=1"></script>
+  <script defer src="/js/about.js?v=5"></script>
+</body>
+</html>

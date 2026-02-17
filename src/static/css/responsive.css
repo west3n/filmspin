@@ -1,29 +1,115 @@
 @media (min-width: 640px) {
-  .result-card,
   .skeleton-card {
     flex-direction: row;
   }
 
-  .poster {
-    width: 28%;
-    min-width: 220px;
-    align-self: flex-start;
-  }
-
-  .terms-shell {
-    padding: 28px 18px 46px;
-  }
-
   .terms-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .terms-contact {
-    padding: 18px;
+    padding: 0;
   }
 }
 
 @media (max-width: 760px) {
+  .home-page {
+    --result-stage-offset-y: 0px;
+    --result-card-offset-y: 0px;
+  }
+
+  .home-center {
+    transform: translateY(-8px);
+  }
+
+  .site-global-header {
+    display: flex;
+    margin-bottom: 8px;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .site-global-controls {
+    justify-self: auto;
+    justify-content: flex-end;
+  }
+
+  .header-control-spacer {
+    display: none;
+  }
+
+  .site-global-logo {
+    width: 60px;
+  }
+
+  .terms-hero {
+    max-width: none;
+  }
+
+  .terms-subtitle {
+    max-width: none;
+  }
+
+  .terms-grid {
+    width: 100%;
+    margin-top: 92px;
+    gap: 28px;
+  }
+
+  .terms-contact {
+    width: 100%;
+    margin-top: 34px;
+  }
+
+  .about-title-row {
+    width: 100%;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .about-easter-rail {
+    flex: 0 0 auto;
+    width: min(100%, 320px);
+    gap: 10px;
+    margin-left: 12px;
+    margin-top: 4px;
+  }
+
+  .about-orbit {
+    width: clamp(92px, 18vw, 120px);
+  }
+
+  .about-orbit-ship {
+    width: clamp(50px, 10.6vw, 66px);
+    height: clamp(50px, 10.6vw, 66px);
+  }
+
+  .about-poem-line {
+    width: min(100%, 34ch);
+    min-height: 4.8em;
+    font-size: 0.7rem;
+    line-height: 1.42;
+  }
+
+  .terms-title {
+    font-size: clamp(3.6rem, 17vw, 5.8rem);
+  }
+
+  .terms-title-line-b {
+    transform: translateX(0.72ch);
+  }
+
+  .terms-card h2,
+  .terms-contact h2 {
+    font-size: 1.34rem;
+  }
+
+  .terms-card p,
+  .terms-contact p {
+    font-size: 1.04rem;
+    line-height: 1.78;
+  }
+
   .status-message {
     top: 84px;
   }
@@ -36,6 +122,7 @@
     position: sticky;
     bottom: 10px;
     z-index: 40;
+    min-height: 72px;
   }
 
   .cta-inner {
@@ -47,22 +134,103 @@
   }
 
   #spin {
-    width: 100%;
+    width: auto;
+    min-height: 0;
+    height: auto;
+    max-width: min(96vw, 760px);
+    gap: 16px;
+    padding: 16px 28px 16px 20px;
+    font-size: clamp(1.32rem, 5.6vw, 1.68rem);
+    letter-spacing: 0.06em;
+  }
+
+  #spin .dice {
+    width: clamp(64px, 21vw, 80px);
+    height: clamp(64px, 21vw, 80px);
+  }
+
+  #spin .dice img {
+    width: clamp(36px, 12vw, 48px);
+    height: clamp(36px, 12vw, 48px);
   }
 
   .result-card,
-  .skeleton-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+  .skeleton-card,
+  .search-card {
     padding: 14px !important;
+    min-height: 0;
   }
 
-  .result-card > .flex-1 {
+  .result-card {
+    height: auto;
+  }
+
+  .result-content {
     width: 100%;
+    margin-top: 0;
+    padding: 0 10px 14px;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'title'
+      'meta'
+      'ratings'
+      'overview'
+      'people'
+      'watch';
+    row-gap: 6px;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
   }
 
-  .poster,
+  .result-content > #ratings {
+    justify-self: start;
+    text-align: left;
+    align-items: flex-start;
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .result-content > #watchRow {
+    justify-self: stretch;
+    max-width: none;
+    padding: 12px 0 0;
+  }
+
+  .result-respin {
+    top: 8px;
+    right: 8px;
+    min-height: 32px;
+    padding: 5px 8px 5px 6px;
+    gap: 5px;
+    font-size: 9.5px;
+  }
+
+  .result-respin img {
+    width: 16px;
+    height: 16px;
+  }
+
+  .search-loader-core {
+    width: clamp(110px, 40vw, 150px);
+  }
+
+  .search-loader-ship {
+    width: clamp(38px, 12vw, 52px);
+    height: clamp(38px, 12vw, 52px);
+  }
+
+  .search-loader-text {
+    margin-top: 2px;
+    font-size: clamp(0.56rem, 2.5vw, 0.66rem);
+    letter-spacing: 0.14em;
+  }
+
+  .search-loader-subtext {
+    font-size: clamp(0.7rem, 3vw, 0.8rem);
+    max-width: 28ch;
+  }
+
   .skeleton-media {
     width: min(42vw, 180px);
     min-width: 0;
@@ -88,13 +256,18 @@
   }
 
   .movie-title {
-    font-size: clamp(1.1rem, 4.8vw, 1.35rem);
+    font-size: clamp(1.4rem, 6.2vw, 1.85rem);
     line-height: 1.2;
+  }
+
+  .movie-title-year {
+    font-size: 0.72em;
   }
 
   .movie-meta {
     margin-top: 4px;
     font-size: 11px;
+    letter-spacing: 0.08em;
   }
 
   .people-block {
@@ -112,10 +285,10 @@
   }
 
   .movie-overview {
-    margin-top: 10px;
-    font-size: 0.93rem;
-    line-height: 1.45;
-    -webkit-line-clamp: 6;
+    margin-top: 0;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    -webkit-line-clamp: 4;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
@@ -141,7 +314,7 @@
   }
 
   .watch-open-all {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
   }
 
   .watch-provider {
@@ -163,7 +336,7 @@
   }
 
   .apply-controls .tool-btn {
-    font-size: 12px;
+    font-size: clamp(0.9rem, 3.2vw, 1.02rem);
     padding: 6px 10px;
   }
 
@@ -171,23 +344,89 @@
     font-size: 11px;
     margin-bottom: 11px;
   }
+
+  .site-footer {
+    padding: 12px 0 14px;
+  }
+
+  .site-footer-inner {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 8px;
+  }
+
+  .site-footer-copy {
+    font-size: 0.88rem;
+  }
+
+  .site-footer-nav {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .site-footer-link {
+    font-size: 0.88rem;
+  }
 }
 
 @media (max-width: 420px) {
+  #spin {
+    padding: 14px 24px 14px 18px;
+    gap: 14px;
+    font-size: clamp(1.2rem, 6.2vw, 1.52rem);
+    letter-spacing: 0.04em;
+  }
+
+  #spin .dice {
+    width: 60px;
+    height: 60px;
+  }
+
+  #spin .dice img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .about-title-row {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .about-easter-rail {
+    width: min(100%, 286px);
+    gap: 8px;
+    margin-left: 6px;
+  }
+
+  .about-orbit {
+    width: 88px;
+  }
+
+  .about-orbit-ship {
+    width: 52px;
+    height: 52px;
+  }
+
+  .about-poem-line {
+    min-height: 5.2em;
+    font-size: 0.62rem;
+    line-height: 1.36;
+  }
+
   .result-card,
-  .skeleton-card {
+  .skeleton-card,
+  .search-card {
     gap: 9px;
     padding: 12px !important;
   }
 
-  .poster,
   .skeleton-media {
     width: min(48vw, 150px);
     max-width: 150px;
   }
 
   .movie-title {
-    font-size: 1.02rem;
+    font-size: 1.26rem;
   }
 
   .movie-overview {
@@ -242,6 +481,5 @@
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
-    transition: none !important;
   }
 }

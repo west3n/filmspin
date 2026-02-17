@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title id="docTitle">FilmSpin — Privacy Policy</title>
+  <meta name="description" content="Privacy Policy for FilmSpin." />
+  <link rel="preload" as="image" href="/img/logo.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=8" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=8" />
+  <link rel="shortcut icon" href="/favicon.ico?v=8" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png?v=8" />
+  <script>
+    try {
+      if (sessionStorage.getItem('fs_legal_enter') === '1') {
+        document.documentElement.classList.add('legal-nav-enter');
+        sessionStorage.removeItem('fs_legal_enter');
+      }
+      const now = Date.now() / 1000;
+      const root = document.documentElement;
+      root.style.setProperty('--star-drift-delay', `${-(now % 62)}s`);
+      root.style.setProperty('--star-reverse-delay', `${-(now % 78)}s`);
+      root.style.setProperty('--star-twinkle-delay-a', `${-(now % 4.6)}s`);
+      root.style.setProperty('--star-twinkle-delay-b', `${-(now % 5.2)}s`);
+    } catch (_) {}
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=152">
+</head>
+<body class="terms-page">
+  <main class="site-shell terms-shell">
+    <header class="site-global-header">
+      <a class="site-global-logo" href="/" aria-label="FilmSpin Home">
+        <img src="/img/logo.png" alt="FilmSpin" width="1080" height="1080" loading="eager" decoding="sync" fetchpriority="high">
+      </a>
+      <div class="site-global-controls">
+        <span class="header-control-spacer" aria-hidden="true">Filters</span>
+        <label for="langSwitch" class="sr-only">Language</label>
+        <select id="langSwitch" class="lang-switch" aria-label="Language">
+          <option value="en">EN</option>
+          <option value="ru">RU</option>
+        </select>
+      </div>
+    </header>
+
+    <section class="panel terms-hero">
+      <p class="terms-kicker" data-i18n="kicker">Legal</p>
+      <h1 class="terms-title">
+        <span class="terms-title-line terms-title-line-a" data-i18n="title_line_a">Privacy</span>
+        <span class="terms-title-line terms-title-line-b" data-i18n="title_line_b">Policy</span>
+      </h1>
+      <p class="terms-subtitle" data-i18n="subtitle">
+        This policy explains what data FilmSpin processes, why it is needed, and what control you have over that data.
+      </p>
+      <p class="terms-updated" data-i18n="updated">Last updated: February 17, 2026</p>
+    </section>
+
+    <section class="terms-grid" aria-label="Privacy sections">
+      <article class="panel terms-card">
+        <h2 data-i18n="h1">1. Scope</h2>
+        <p data-i18n="p1">FilmSpin is a no-account service for random movie discovery. This policy applies to the website and its API endpoints.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h2">2. Data We Process</h2>
+        <p data-i18n="p2">We do not collect account profiles or payment data. We may process technical data such as request timestamps, path, HTTP status, user language, and anonymized operational logs.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h3">3. Why We Process It</h2>
+        <p data-i18n="p3">Technical data is used for service stability, debugging, abuse prevention, and performance monitoring.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h4">4. Local Storage</h2>
+        <p data-i18n="p4">FilmSpin uses browser local storage for interface preferences (for example selected language and filter state). This data stays on your device unless you clear it.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h5">5. Third-Party Data Providers</h2>
+        <p data-i18n="p5">Movie metadata and ratings are retrieved from third-party providers. Their services process requests under their own privacy policies. FilmSpin does not sell your personal data.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h6">6. Retention</h2>
+        <p data-i18n="p6">Operational logs are kept only for as long as needed to maintain reliability and security. Cached movie data is technical and not tied to personal user accounts.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h7">7. Your Choices</h2>
+        <p data-i18n="p7">You can stop using the service at any time, clear your browser storage, and block requests to third-party services through browser tools or network settings.</p>
+      </article>
+
+      <article class="panel terms-card">
+        <h2 data-i18n="h8">8. Policy Updates</h2>
+        <p data-i18n="p8">This policy may be updated to reflect product, legal, or infrastructure changes. The date at the top shows the latest revision.</p>
+      </article>
+    </section>
+
+    <section class="panel terms-contact">
+      <h2 data-i18n="h9">9. Contact</h2>
+      <p data-i18n="p9">Questions about privacy: <a href="https://t.me/miroshnikov" target="_blank" rel="noopener">t.me/miroshnikov</a></p>
+    </section>
+
+    <footer class="terms-footer">© 2026 FilmSpin</footer>
+  </main>
+
+  <script src="/js/lang_picker.js?v=1"></script>
+  <script defer src="/js/privacy.js?v=13"></script>
+</body>
+</html>
