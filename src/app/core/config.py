@@ -4,6 +4,8 @@ _settings = get_settings()
 
 TMDB_API_KEY = _settings.tmdb_api_key
 OMDB_API_KEY = _settings.omdb_api_key
+OMDB_API_KEYS = tuple(_settings.omdb_api_keys_list)
+OMDB_MOCK_ENABLED = _settings.omdb_mock_enabled
 KINOPOISK_API_KEY = _settings.kinopoisk_api_key
 
 TMDB_BASE = _settings.tmdb_base

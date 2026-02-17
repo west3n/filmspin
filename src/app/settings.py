@@ -14,6 +14,9 @@ class Settings(BaseSettings):
 
     tmdb_api_key: str = ""
     omdb_api_key: str = ""
+    omdb_api_key_2: str = ""
+    omdb_api_key_backup: str = ""
+    omdb_mock_enabled: bool = False
     kinopoisk_api_key: str | None = None
 
     tmdb_base: str = "https://api.themoviedb.org/3"
@@ -55,6 +58,19 @@ class Settings(BaseSettings):
         if raw == "*":
             return ["*"]
         return [x.strip() for x in raw.split(",") if x.strip()]
+
+    @property
+    def omdb_api_keys_list(self) -> list[str]:
+        keys = [self.omdb_api_key, self.omdb_api_key_2, self.omdb_api_key_backup]
+        out: list[str] = []
+        seen: set[str] = set()
+        for key in keys:
+            value = (key or "").strip()
+            if not value or value in seen:
+                continue
+            seen.add(value)
+            out.append(value)
+        return out
 
 
 @lru_cache(maxsize=1)
