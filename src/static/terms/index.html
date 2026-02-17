@@ -5,23 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title id="docTitle">FilmSpin — Terms of Service</title>
   <meta name="description" content="Terms of Service for FilmSpin." />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=43">
+  <link rel="preload" as="image" href="/img/logo.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=8" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=8" />
+  <link rel="shortcut icon" href="/favicon.ico?v=8" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png?v=8" />
+  <script>
+    try {
+      if (sessionStorage.getItem('fs_legal_enter') === '1') {
+        document.documentElement.classList.add('legal-nav-enter');
+        sessionStorage.removeItem('fs_legal_enter');
+      }
+      const now = Date.now() / 1000;
+      const root = document.documentElement;
+      root.style.setProperty('--star-drift-delay', `${-(now % 62)}s`);
+      root.style.setProperty('--star-reverse-delay', `${-(now % 78)}s`);
+      root.style.setProperty('--star-twinkle-delay-a', `${-(now % 4.6)}s`);
+      root.style.setProperty('--star-twinkle-delay-b', `${-(now % 5.2)}s`);
+    } catch (_) {}
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=152">
 </head>
 <body class="terms-page">
   <main class="site-shell terms-shell">
-    <header class="terms-topbar">
-      <a id="backLink" class="terms-back" href="/" data-i18n="back">Back to FilmSpin</a>
-      <label for="langSwitch" class="sr-only">Language</label>
-      <select id="langSwitch" class="lang-switch" aria-label="Language">
-        <option value="en">EN</option>
-        <option value="ru">RU</option>
-      </select>
+    <header class="site-global-header">
+      <a class="site-global-logo" href="/" aria-label="FilmSpin Home">
+        <img src="/img/logo.png" alt="FilmSpin" width="1080" height="1080" loading="eager" decoding="sync" fetchpriority="high">
+      </a>
+      <div class="site-global-controls">
+        <span class="header-control-spacer" aria-hidden="true">Filters</span>
+        <label for="langSwitch" class="sr-only">Language</label>
+        <select id="langSwitch" class="lang-switch" aria-label="Language">
+          <option value="en">EN</option>
+          <option value="ru">RU</option>
+        </select>
+      </div>
     </header>
 
     <section class="panel terms-hero">
       <p class="terms-kicker" data-i18n="kicker">Legal</p>
-      <h1 class="terms-title" data-i18n="title">Terms of Service</h1>
+      <h1 class="terms-title">
+        <span class="terms-title-line terms-title-line-a" data-i18n="title_line_a">Terms</span>
+        <span class="terms-title-line terms-title-line-b" data-i18n="title_line_b">of Service</span>
+      </h1>
       <p class="terms-subtitle" data-i18n="subtitle">
         FilmSpin helps you discover a random movie. These terms explain how the service is provided and your responsibilities when using it.
       </p>
@@ -78,6 +105,7 @@
     <footer class="terms-footer">© 2026 FilmSpin</footer>
   </main>
 
-  <script defer src="/js/terms.js?v=1"></script>
+  <script src="/js/lang_picker.js?v=1"></script>
+  <script defer src="/js/terms.js?v=16"></script>
 </body>
 </html>

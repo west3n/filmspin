@@ -2,8 +2,10 @@ const I18N = {
   en: {
     docTitle: 'FilmSpin — Terms of Service',
     back: 'Back to FilmSpin',
+    filters: 'Filters',
     kicker: 'Legal',
-    title: 'Terms of Service',
+    title_line_a: 'TERMS',
+    title_line_b: 'OF SERVICE',
     subtitle: 'FilmSpin helps you discover a random movie. These terms explain how the service is provided and your responsibilities when using it.',
     updated: 'Last updated: February 15, 2026',
     h1: '1. Service & Availability',
@@ -28,8 +30,10 @@ const I18N = {
   ru: {
     docTitle: 'FilmSpin — Условия использования',
     back: 'Назад к FilmSpin',
+    filters: 'Фильтры',
     kicker: 'Юридическая информация',
-    title: 'Условия использования',
+    title_line_a: 'УСЛОВИЯ',
+    title_line_b: 'ИСПОЛЬЗОВАНИЯ',
     subtitle: 'FilmSpin помогает находить случайные фильмы. Эти условия описывают, как предоставляется сервис и какие правила действуют при использовании.',
     updated: 'Последнее обновление: 15 февраля 2026',
     h1: '1. Сервис и доступность',
@@ -54,9 +58,16 @@ const I18N = {
 };
 
 const langSelect = document.getElementById('langSwitch');
+const langPicker = window.initLangPicker ? window.initLangPicker(langSelect) : null;
+const headerControlSpacer = document.querySelector('.header-control-spacer');
+const publicConfig = { ru_enabled: true };
+const homeLogoLink = document.querySelector('.site-global-logo[href="/"]');
+let isHomeNavigationInFlight = false;
 
 function getLang() {
-  return localStorage.getItem('fs_lang') || (navigator.language.startsWith('ru') ? 'ru' : 'en');
+  const preferred = localStorage.getItem('fs_lang') || (navigator.language.startsWith('ru') ? 'ru' : 'en');
+  if (preferred === 'ru' && !isRuEnabled()) return 'en';
+  return preferred;
 }
 
 function setLang(value) {
@@ -68,22 +79,92 @@ function t(key) {
   return (I18N[lang] && I18N[lang][key]) || (I18N.en[key] || key);
 }
 
+function isRuEnabled() {
+  return publicConfig.ru_enabled !== false;
+}
+
+function applyLanguageAvailability() {
+  const ruOption = langSelect.querySelector('option[value="ru"]');
+  if (ruOption) {
+    const allowed = isRuEnabled();
+    ruOption.disabled = !allowed;
+    ruOption.hidden = !allowed;
+  }
+  if (!isRuEnabled() && localStorage.getItem('fs_lang') === 'ru') {
+    setLang('en');
+  }
+  if (langPicker) langPicker.refresh();
+}
+
+async function loadPublicConfig() {
+  try {
+    const response = await fetch('/api/config', { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (typeof data?.ru_enabled === 'boolean') publicConfig.ru_enabled = data.ru_enabled;
+  } catch (_) {}
+}
+
 function applyTranslations() {
   const lang = getLang();
   document.documentElement.setAttribute('lang', lang);
   document.getElementById('docTitle').textContent = t('docTitle');
+  if (headerControlSpacer) headerControlSpacer.textContent = t('filters');
   document.querySelectorAll('[data-i18n]').forEach((node) => {
     const key = node.getAttribute('data-i18n');
     node.innerHTML = t(key);
   });
   langSelect.value = lang;
+  if (langPicker) langPicker.sync();
 }
 
-(function init() {
+function clearLegalEnterClass() {
+  if (!document.documentElement.classList.contains('legal-nav-enter')) return;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.setTimeout(() => {
+    document.documentElement.classList.remove('legal-nav-enter');
+  }, reduceMotion ? 0 : 1650);
+}
+
+function isModifiedNavigation(event) {
+  return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
+}
+
+function navigateHomeWithAnimation(event) {
+  const target = event.currentTarget;
+  if (!(target instanceof HTMLAnchorElement)) return;
+  if (event.defaultPrevented || isModifiedNavigation(event) || isHomeNavigationInFlight) return;
+
+  event.preventDefault();
+  const href = target.getAttribute('href') || '/';
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion) {
+    window.location.href = href;
+    return;
+  }
+
+  isHomeNavigationInFlight = true;
+  document.documentElement.classList.remove('legal-nav-enter');
+  document.body.classList.add('is-leaving-home');
+  document.documentElement.classList.add('is-leaving-home');
+  window.setTimeout(() => {
+    window.location.href = href;
+  }, 620);
+}
+
+(async function init() {
+  await loadPublicConfig();
+  applyLanguageAvailability();
   langSelect.value = getLang();
   applyTranslations();
+  clearLegalEnterClass();
   langSelect.addEventListener('change', () => {
+    if (langSelect.value === 'ru' && !isRuEnabled()) {
+      langSelect.value = 'en';
+      return;
+    }
     setLang(langSelect.value);
     applyTranslations();
   });
+  if (homeLogoLink) homeLogoLink.addEventListener('click', navigateHomeWithAnimation);
 })();
