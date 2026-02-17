@@ -5,57 +5,75 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title id="docTitle">FilmSpin — 404</title>
   <meta name="description" content="FilmSpin page not found." />
-  <link rel="icon" href="/img/favicon.ico" />
-  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/404.css?v=5">
+  <link rel="preload" as="image" href="/img/logo.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=8" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=8" />
+  <link rel="shortcut icon" href="/favicon.ico?v=8" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png?v=8" />
+  <script>
+    try {
+      const now = Date.now() / 1000;
+      const root = document.documentElement;
+      root.style.setProperty('--star-drift-delay', `${-(now % 62)}s`);
+      root.style.setProperty('--star-reverse-delay', `${-(now % 78)}s`);
+      root.style.setProperty('--star-twinkle-delay-a', `${-(now % 4.6)}s`);
+      root.style.setProperty('--star-twinkle-delay-b', `${-(now % 5.2)}s`);
+    } catch (_) {}
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=152">
+  <link rel="stylesheet" href="/css/404.css?v=32">
 </head>
-<body class="lost-page">
-  <main class="lost-shell">
-    <header class="lost-topbar">
-      <a class="brand-link" href="/">FilmSpin</a>
-      <label for="langSwitch" class="sr-only">Language</label>
-      <select id="langSwitch" class="lang-switch" aria-label="Language">
-        <option value="en">EN</option>
-        <option value="ru">RU</option>
-      </select>
+<body class="terms-page error-page">
+  <main class="site-shell terms-shell error-shell">
+    <header class="site-global-header">
+      <a class="site-global-logo" href="/" aria-label="FilmSpin Home">
+        <img src="/img/logo.png" alt="FilmSpin" width="1080" height="1080" loading="eager" decoding="sync" fetchpriority="high">
+      </a>
+      <div class="site-global-controls">
+        <span class="header-control-spacer" aria-hidden="true">Filters</span>
+        <label for="langSwitch" class="sr-only">Language</label>
+        <select id="langSwitch" class="lang-switch" aria-label="Language">
+          <option value="en">EN</option>
+          <option value="ru">RU</option>
+        </select>
+      </div>
     </header>
 
-    <section class="lost-stage" aria-label="404">
-      <div class="planet-wrap" aria-hidden="true">
-        <div class="orbit orbit-a"></div>
-        <div class="orbit orbit-b"></div>
-        <div class="planet-core"></div>
-        <img class="ship" src="/img/endurance.png" alt="Endurance" />
-      </div>
-
-      <div class="lost-content">
-        <p class="error-code">404</p>
-        <h1 id="title" class="lost-title">You drifted off route.</h1>
-        <p id="subtitle" class="lost-subtitle">The page you are looking for does not exist, but your next movie still does.</p>
-
-        <div class="lost-actions">
-          <a id="homeBtn" class="btn btn-primary" href="/">Back Home</a>
-          <a id="termsBtn" class="btn btn-ghost" href="/terms">Terms</a>
-        </div>
+    <section class="panel error-hero" aria-label="404">
+      <p class="terms-kicker error-code-kicker">404</p>
+      <h1 id="title" class="error-title">You drifted off route.</h1>
+      <p id="subtitle" class="error-subtitle">The page you are looking for does not exist, but your next movie still does.</p>
+      <div class="error-actions">
+        <a id="homeBtn" class="error-btn error-btn-primary" href="/">Back Home</a>
+        <a id="termsBtn" class="error-btn error-btn-ghost" href="/terms">Terms</a>
       </div>
     </section>
 
-    <section class="lost-reco" aria-label="Lost movie recommendation">
-      <p id="pickKicker" class="pick-kicker">Lost & Found Pick</p>
-      <article class="pick-card">
-        <div class="pick-mark" aria-hidden="true">⊚</div>
-        <div class="pick-content">
-          <p id="pickTitle" class="pick-title">If you are already in deep space, try this one:</p>
-          <h2 id="pickMovieName" class="pick-movie-name">Interstellar</h2>
-          <p id="pickMeta" class="pick-meta">2014</p>
-          <p id="pickWhy" class="pick-why">A mission beyond known coordinates, impossible decisions, and a race against time.</p>
-          <a id="pickLink" class="pick-link" href="/" target="_blank" rel="noopener">Open movie page</a>
+    <section class="error-grid" aria-label="Lost movie recommendation">
+      <article class="panel error-visual" aria-hidden="true">
+        <div class="planet-wrap">
+          <div class="orbit orbit-a"></div>
+          <div class="orbit orbit-b"></div>
+          <div class="planet-core"></div>
+          <img class="ship" src="/img/endurance.png" alt="">
         </div>
       </article>
+
+      <article class="panel error-pick">
+        <p id="pickKicker" class="pick-kicker">Lost &amp; Found Pick</p>
+        <p id="pickTitle" class="pick-title">If you are already in deep space, try this one:</p>
+        <h2 id="pickMovieName" class="pick-movie-name">Interstellar</h2>
+        <p id="pickMeta" class="pick-meta">2014</p>
+        <p id="pickWhy" class="pick-why">A mission beyond known coordinates, impossible decisions, and a race against time.</p>
+        <a id="pickLink" class="pick-link" href="/" target="_blank" rel="noopener">Open movie page</a>
+      </article>
     </section>
+
+    <footer class="terms-footer">© 2026 FilmSpin</footer>
   </main>
 
-  <script defer src="/js/404.js?v=1"></script>
+  <script src="/js/lang_picker.js?v=1"></script>
+  <script defer src="/js/404.js?v=7"></script>
 </body>
 </html>

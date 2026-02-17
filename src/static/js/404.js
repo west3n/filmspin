@@ -1,6 +1,7 @@
 const I18N = {
   en: {
     docTitle: 'FilmSpin — 404',
+    filters: 'Filters',
     title: 'You drifted off route.',
     subtitle: 'The page you are looking for does not exist, but your next movie still does.',
     homeBtn: 'Back Home',
@@ -11,6 +12,7 @@ const I18N = {
   },
   ru: {
     docTitle: 'FilmSpin — 404',
+    filters: 'Фильтры',
     title: 'Ты сбился с курса.',
     subtitle: 'Страница не найдена, но твой следующий фильм всё ещё ждёт тебя.',
     homeBtn: 'На главную',
@@ -89,10 +91,15 @@ const LOST_MOVIES = [
 ];
 
 const langSelect = document.getElementById('langSwitch');
+const langPicker = window.initLangPicker ? window.initLangPicker(langSelect) : null;
+const headerControlSpacer = document.querySelector('.header-control-spacer');
+const publicConfig = { ru_enabled: true };
 let selectedMovie = null;
 
 function getLang() {
-  return localStorage.getItem('fs_lang') || (navigator.language.startsWith('ru') ? 'ru' : 'en');
+  const preferred = localStorage.getItem('fs_lang') || (navigator.language.startsWith('ru') ? 'ru' : 'en');
+  if (preferred === 'ru' && !isRuEnabled()) return 'en';
+  return preferred;
 }
 
 function setLang(value) {
@@ -104,10 +111,37 @@ function t(key) {
   return (I18N[lang] && I18N[lang][key]) || (I18N.en[key] || key);
 }
 
+function isRuEnabled() {
+  return publicConfig.ru_enabled !== false;
+}
+
+function applyLanguageAvailability() {
+  const ruOption = langSelect.querySelector('option[value="ru"]');
+  if (ruOption) {
+    const allowed = isRuEnabled();
+    ruOption.disabled = !allowed;
+    ruOption.hidden = !allowed;
+  }
+  if (!isRuEnabled() && localStorage.getItem('fs_lang') === 'ru') {
+    setLang('en');
+  }
+  if (langPicker) langPicker.refresh();
+}
+
+async function loadPublicConfig() {
+  try {
+    const response = await fetch('/api/config', { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (typeof data?.ru_enabled === 'boolean') publicConfig.ru_enabled = data.ru_enabled;
+  } catch (_) {}
+}
+
 function applyTranslations() {
   const lang = getLang();
   document.documentElement.setAttribute('lang', lang);
   document.getElementById('docTitle').textContent = t('docTitle');
+  if (headerControlSpacer) headerControlSpacer.textContent = t('filters');
   document.getElementById('title').textContent = t('title');
   document.getElementById('subtitle').textContent = t('subtitle');
   document.getElementById('homeBtn').textContent = t('homeBtn');
@@ -116,6 +150,7 @@ function applyTranslations() {
   document.getElementById('pickTitle').textContent = t('pickTitle');
   document.getElementById('pickLink').textContent = t('pickLink');
   langSelect.value = lang;
+  if (langPicker) langPicker.sync();
 
   if (selectedMovie) {
     document.getElementById('pickMovieName').textContent =
@@ -133,11 +168,17 @@ function pickRandomMovie() {
   return LOST_MOVIES[idx];
 }
 
-(function init() {
+(async function init() {
+  await loadPublicConfig();
+  applyLanguageAvailability();
   selectedMovie = pickRandomMovie();
   langSelect.value = getLang();
   applyTranslations();
   langSelect.addEventListener('change', () => {
+    if (langSelect.value === 'ru' && !isRuEnabled()) {
+      langSelect.value = 'en';
+      return;
+    }
     setLang(langSelect.value);
     applyTranslations();
   });
