@@ -226,7 +226,7 @@
   }
 
   .error-title {
-    font-size: clamp(3.6rem, 17vw, 5.8rem);
+    font-size: clamp(2.4rem, 11.5vw, 3.9rem);
   }
 
   .error-subtitle {
@@ -253,6 +253,10 @@
   .pick-why {
     font-size: 1.02rem;
     line-height: 1.64;
+  }
+
+  .pick-movie-name {
+    font-size: clamp(1.12rem, 5.2vw, 1.46rem);
   }
 }
 

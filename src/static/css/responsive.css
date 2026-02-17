@@ -42,6 +42,30 @@
     width: 60px;
   }
 
+  .home-logo-wrap {
+    align-items: center;
+    text-align: center;
+  }
+
+  .site-title {
+    margin-inline: auto;
+  }
+
+  .site-global-meta .hero-slogan,
+  .site-global-meta .discovery-meter {
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    line-height: 1.12;
+  }
+
+  .site-global-meta .hero-slogan {
+    min-height: 1em;
+  }
+
+  .site-global-meta .discovery-meter {
+    min-height: 1em;
+  }
+
   .terms-hero {
     max-width: none;
   }
@@ -92,7 +116,7 @@
   }
 
   .terms-title {
-    font-size: clamp(3.6rem, 17vw, 5.8rem);
+    font-size: clamp(2.4rem, 11.5vw, 3.9rem);
   }
 
   .terms-title-line-b {
@@ -101,7 +125,7 @@
 
   .terms-card h2,
   .terms-contact h2 {
-    font-size: 1.34rem;
+    font-size: 0.9rem;
   }
 
   .terms-card p,
