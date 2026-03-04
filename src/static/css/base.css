@@ -781,6 +781,20 @@ body {
   user-select: none;
 }
 
+.filters-drawer-title {
+  margin: 0;
+  font-family: 'Archivo', 'Segoe UI', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--footer-link);
+}
+
+.filters-backdrop {
+  display: none;
+}
+
 .filters-drawer-actions {
   display: inline-flex;
   align-items: center;

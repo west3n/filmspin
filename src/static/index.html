@@ -52,7 +52,7 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=160">
+  <link rel="stylesheet" href="/css/style.css?v=161">
 </head>
 <body class="home-page min-h-screen">
   <main class="site-shell home-shell">
@@ -76,7 +76,8 @@
 
     <section id="filters" class="filters-drawer" aria-hidden="true">
       <div id="filtersHeader" class="filters-header filters-drawer-head flex items-center justify-between gap-3">
-        <button id="filtersToggle" class="toggle-btn toggle-icon-btn filters-collapser sr-only" aria-expanded="false" aria-controls="filtersBody" aria-label="Expand filters" tabindex="-1">
+        <p id="filtersDrawerTitle" class="filters-drawer-title">Filters</p>
+        <button id="filtersToggle" class="toggle-btn toggle-icon-btn filters-collapser" aria-expanded="false" aria-controls="filtersBody" aria-label="Expand filters" tabindex="-1">
           <span class="sr-only">Toggle filters</span>
           <span class="toggle-icon" aria-hidden="true"></span>
         </button>
@@ -142,6 +143,7 @@
         </section>
       </div>
     </section>
+    <button id="filtersBackdrop" class="filters-backdrop" type="button" aria-hidden="true" aria-label="Close filters" tabindex="-1"></button>
 
     <header class="home-hero pt-5">
       <div class="home-center">
@@ -253,6 +255,6 @@
   </main>
 
   <script src="/js/lang_picker.js?v=1"></script>
-  <script type="module" defer src="/js/app.js?v=85"></script>
+  <script type="module" defer src="/js/app.js?v=86"></script>
 </body>
 </html>

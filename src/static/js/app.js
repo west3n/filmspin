@@ -1,4 +1,4 @@
-import { I18N, langMap } from './modules/i18n.js?v=39';
+import { I18N, langMap } from './modules/i18n.js?v=40';
 import { getJson } from './modules/http.js?v=22';
 import {
   FILTERS_STORAGE_KEY,
@@ -40,11 +40,13 @@ const langPicker = window.initLangPicker ? window.initLangPicker(langSelect) : n
 const siteTitleEl = document.getElementById('siteTitle');
 const heroFiltersBtn = document.getElementById('heroFiltersBtn');
 const filtersSection = document.getElementById('filters');
+const filtersBackdrop = document.getElementById('filtersBackdrop');
 const homeShellEl = document.querySelector('.home-shell');
 const globalHeaderEl = document.querySelector('.site-global-header');
 const globalHeaderLogoEl = document.querySelector('.site-global-logo');
 const globalHeaderControlsEl = document.querySelector('.site-global-controls');
 const filtersHeader = document.getElementById('filtersHeader');
+const filtersDrawerTitleEl = document.getElementById('filtersDrawerTitle');
 const filtersToggle = document.getElementById('filtersToggle');
 const filtersBody = document.getElementById('filtersBody');
 const filtersResetBtn = document.getElementById('filtersReset');
@@ -69,6 +71,7 @@ const footerAboutLink = document.getElementById('footerAbout');
 const publicConfig = { ru_enabled: true };
 let isLegalNavigationInFlight = false;
 const LEGAL_TRANSITION_KEY = 'fs_legal_enter';
+const MOBILE_FILTERS_VIEWPORT = '(max-width: 1023px)';
 
 function isRuEnabled() {
   return publicConfig.ru_enabled !== false;
@@ -155,8 +158,26 @@ function isFiltersDrawerMode() {
   return Boolean(filtersSection?.classList.contains('filters-drawer'));
 }
 
+function isMobileFiltersViewport() {
+  return window.matchMedia(MOBILE_FILTERS_VIEWPORT).matches;
+}
+
+function setFiltersBackdropVisible(isVisible) {
+  if (!filtersBackdrop) return;
+  filtersBackdrop.classList.toggle('is-visible', isVisible);
+  filtersBackdrop.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
+}
+
 function syncFiltersDrawerMetrics() {
   if (!isFiltersDrawerMode() || !filtersSection || !homeShellEl || !globalHeaderEl) return;
+  if (isMobileFiltersViewport()) {
+    document.body.style.setProperty('--filters-shift', '0px');
+    filtersSection.style.removeProperty('--filters-left');
+    filtersSection.style.removeProperty('--filters-right');
+    filtersSection.style.removeProperty('--filters-top');
+    return;
+  }
+
   const shellRect = homeShellEl.getBoundingClientRect();
   const headerRect = globalHeaderEl.getBoundingClientRect();
   const logoRect = globalHeaderLogoEl?.getBoundingClientRect() || null;
@@ -193,12 +214,18 @@ function openFiltersDrawer() {
   if (!isFiltersDrawerMode()) return;
   const isClosing = filtersSection.classList.contains('is-closing');
   if (filtersSection.classList.contains('is-visible') && !isClosing) return;
+  const isMobile = isMobileFiltersViewport();
   syncFiltersDrawerMetrics();
   filtersSection.classList.remove('is-closing');
   filtersSection.style.height = 'auto';
   const targetHeight = `${filtersSection.scrollHeight}px`;
   filtersSection.style.height = '0px';
-  document.body.classList.add('has-filters-space');
+  if (isMobile) {
+    document.body.classList.add('filters-sheet-open');
+    setFiltersBackdropVisible(true);
+  } else {
+    document.body.classList.add('has-filters-space');
+  }
   filtersSection.classList.add('is-visible');
   filtersSection.setAttribute('aria-hidden', 'false');
   if (heroFiltersBtn) {
@@ -215,12 +242,13 @@ function closeFiltersDrawer() {
   if (!isFiltersDrawerMode()) return;
   if (!filtersSection.classList.contains('is-visible')) return;
   if (filtersSection.classList.contains('is-closing')) return;
+  const isMobile = isMobileFiltersViewport();
   syncFiltersDrawerMetrics();
   if (filtersSection.style.height === 'auto' || !filtersSection.style.height) {
     filtersSection.style.height = `${filtersSection.scrollHeight}px`;
   }
   filtersSection.classList.add('is-closing');
-  document.body.classList.remove('has-filters-space');
+  if (!isMobile) document.body.classList.remove('has-filters-space');
   filtersSection.style.height = `${filtersSection.scrollHeight}px`;
   void filtersSection.offsetHeight;
   requestAnimationFrame(() => {
@@ -433,6 +461,8 @@ function applyStaticTranslations() {
     heroFiltersBtn.textContent = t('filters');
     heroFiltersBtn.setAttribute('aria-label', t('filters'));
   }
+  if (filtersDrawerTitleEl) filtersDrawerTitleEl.textContent = t('filters');
+  if (filtersBackdrop) filtersBackdrop.setAttribute('aria-label', t('filters_close'));
   document.getElementById('yearRangeLabel').textContent = t('year_range');
   document.getElementById('countriesLabel').textContent = `${t('countries')} (multiple choice)`;
   document.getElementById('genresLabel').textContent = `${t('genres')} (multiple choice)`;
@@ -523,12 +553,26 @@ function attachEventHandlers() {
   }
 
   if (isFiltersDrawerMode()) {
+    if (filtersToggle) {
+      filtersToggle.addEventListener('click', () => closeFiltersDrawer());
+    }
+    if (filtersBackdrop) {
+      filtersBackdrop.addEventListener('click', () => closeFiltersDrawer());
+    }
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (!filtersSection.classList.contains('is-visible')) return;
+      closeFiltersDrawer();
+    });
+
     filtersSection.addEventListener('transitionend', (event) => {
       if (event.target !== filtersSection || event.propertyName !== 'height') return;
       if (filtersSection.classList.contains('is-closing')) {
         filtersSection.classList.remove('is-closing', 'is-visible');
         filtersSection.setAttribute('aria-hidden', 'true');
         filtersSection.style.height = '0px';
+        document.body.classList.remove('filters-sheet-open');
+        setFiltersBackdropVisible(false);
         return;
       }
       if (filtersSection.classList.contains('is-visible')) {
@@ -599,6 +643,7 @@ function attachEventHandlers() {
 
 async function initApp() {
   await loadPublicConfig();
+  setFiltersBackdropVisible(false);
   applyLanguageAvailability();
   if (statusEl) statusEl.classList.add('hidden');
   langSelect.value = getLang();
