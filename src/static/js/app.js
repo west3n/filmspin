@@ -11,7 +11,7 @@ import { clamp, toYear, valueToColor } from './modules/app/helpers.js?v=1';
 import { createStatusController } from './modules/app/status.js?v=1';
 import { createSpinButtonController } from './modules/app/spin_button.js?v=8';
 import { createFiltersController } from './modules/app/filters.js?v=7';
-import { createCardController } from './modules/app/card.js?v=9';
+import { createCardController } from './modules/app/card.js?v=10';
 
 const ratingMin = document.getElementById('ratingMin');
 const ratingVal = document.getElementById('ratingVal');

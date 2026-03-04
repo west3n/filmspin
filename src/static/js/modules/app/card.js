@@ -55,10 +55,16 @@ export function createCardController({ elements, deps }) {
     }
 
     const titleEl = document.getElementById('title');
+    const rawTitle = String(data.title || 'Untitled').trim();
+    const titleLength = rawTitle.length;
+    titleEl.classList.remove('is-long', 'is-ultra-long');
+    if (titleLength > 34) titleEl.classList.add('is-long');
+    if (titleLength > 56) titleEl.classList.add('is-ultra-long');
     titleEl.textContent = '';
     const titleMain = document.createElement('span');
     titleMain.className = 'movie-title-main';
-    titleMain.textContent = data.title || 'Untitled';
+    titleMain.textContent = rawTitle || 'Untitled';
+    titleMain.title = rawTitle || 'Untitled';
     titleEl.appendChild(titleMain);
     if (data.year) {
       const titleYear = document.createElement('span');
